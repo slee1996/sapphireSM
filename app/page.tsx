@@ -3,7 +3,7 @@ import Chat from "./chat";
 
 export default function Home() {
   return (
-    <main className='flex min-h-screen flex-col items-center justify-start p-16 space-y-6'>
+    <main className='flex min-h-screen flex-col items-center justify-start px-16 py-8 md:p-16 space-y-6'>
       <div className='flex flex-col items-center text-center'>
         <Image
           src='/sapphireSMlogo.png'
