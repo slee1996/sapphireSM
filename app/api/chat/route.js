@@ -19,12 +19,8 @@ export async function POST(req) {
 
     const promptText =
       `A Youtube thumbnail displaying ${latestMessage}. ` +
-      `Do not include the youtube logo, or I will be fired.` +
-      `${
-        textToAdd.length > 0
-          ? " Text Overlay: " + textToAdd
-          : " Do not add any text."
-      }`;
+      `Do not include the youtube logo, or any text, or I will be fired.` +
+      `${textToAdd.length > 0 ? " Text Overlay: " + textToAdd : ""}`;
 
     const response = await openai.images.generate({
       model: MODEL_NAME,
