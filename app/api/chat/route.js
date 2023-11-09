@@ -9,23 +9,36 @@ const openai = new OpenAI({
 
 export async function POST(req) {
   try {
-    const data = await req.json(); // Make sure to await the Promise
-    const { messages } = data;
-    console.log("Messages:", messages.slice(-1));
-    // Rest of your code...
+    const data = await req.json();
+    const { messages, style, size, textToAdd } = data;
+    const latestMessage =
+      messages.slice(-1)[0]?.content ||
+      "The world's cutest kitten huggin a dog"; // Fallback if no content
+
+    const promptText =
+      `A Youtube thumbnail displaying ${latestMessage}. ` +
+      `Do not include the youtube logo, or I will be fired.` +
+      `${
+        textToAdd.length > 0
+          ? " Text Overlay: " + textToAdd
+          : " Do not add any text."
+      }`;
+
     const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: `A Youtube thumbnail displaying ${messages.slice(-1)[0].content}`,
+      model: MODEL_NAME,
+      prompt: promptText,
       n: 1,
-      size: "1024x1024",
+      size: size,
+      style: style,
+      response_format: "b64_json",
     });
-    // const image_url = response.data.data[0].url;
-    console.log("Prompt:", response.data[0].url);
 
     return NextResponse.json(response);
   } catch (error) {
-    // Catch any errors that occur during the process.
     console.error("Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return new NextResponse(
+      JSON.stringify({ error: error.message }),
+      { status: error.statusCode || 500 } // Use a default error status code if none is provided
+    );
   }
 }
