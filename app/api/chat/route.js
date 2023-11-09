@@ -18,9 +18,9 @@ export async function POST(req) {
       "The world's cutest kitten huggin a dog"; // Fallback if no content
 
     const promptText =
-      `A Youtube thumbnail displaying ${latestMessage}. ` +
-      `Do not include the youtube logo, or I will be fired.` +
-      `${textToAdd.length > 0 ? " Text Overlay: " + textToAdd : ""}`;
+      `An image appropriate for a YouTube thumbnail displaying ${latestMessage}.` +
+      `${textToAdd.length > 0 ? " Text Overlay: " + textToAdd : ""}` +
+      ` Do NOT include the youtube logo or any associated iconography, or I will be fired from my job.`;
 
     const response = await openai.images.generate({
       model: MODEL_NAME,
