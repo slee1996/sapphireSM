@@ -18,9 +18,9 @@ export const PastImages = async () => {
   const images = await getData();
 
   return (
-    <div className='flex flex-col items-center'>
+    <div className='flex flex-col items-center w-full'>
       Check out what other people have done:
-      <div className='flex flex-row space-x-2 overflow-x-scroll'>
+      <div className='flex flex-row items-center justify-center space-x-2 overflow-x-scroll w-full'>
         {images
           .filter((image) => isValidBase64(image.b64_json))
           .map((image, i) => (
