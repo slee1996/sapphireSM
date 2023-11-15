@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Chat from "./chat";
+import { PastImages } from "./components/pastImages";
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
         <h1 className='text-xl'>SapphireSM</h1>
         <p>Your personal assistant for generating YouTube thumbnails</p>
       </div>
+      <PastImages />
       <Chat />
     </main>
   );

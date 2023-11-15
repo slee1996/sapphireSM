@@ -1,12 +1,11 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
+import { sql } from "@vercel/postgres";
 
 const MODEL_NAME = "dall-e-3";
-
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
 export const runtime = "edge";
 
 export async function POST(req) {
@@ -30,6 +29,8 @@ export async function POST(req) {
       style: style,
       response_format: "b64_json",
     });
+
+    await sql`insert into images (B64_json, Revised_prompt) values (${response.data[0].b64_json}, ${response.data[0].revised_prompt})`;
 
     return NextResponse.json(response);
   } catch (error) {

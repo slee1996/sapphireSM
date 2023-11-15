@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@vercel/postgres": "^0.5.1",
     "ai": "^2.2.20",
     "next": "14.0.1",
     "openai": "^4.16.1",
