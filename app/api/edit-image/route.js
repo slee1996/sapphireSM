@@ -17,6 +17,7 @@ function base64ToPng(base64, filename = "image.png") {
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+export const runtime = "edge";
 
 export async function POST(req) {
   try {
