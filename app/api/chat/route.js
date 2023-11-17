@@ -30,7 +30,7 @@ export async function POST(req) {
       response_format: "b64_json",
     });
 
-    await sql`insert into images (B64_json, Revised_prompt) values (${response.data[0].b64_json}, ${response.data[0].revised_prompt})`;
+    // await sql`insert into images (B64_json, Revised_prompt) values (${response.data[0].b64_json}, ${response.data[0].revised_prompt})`;
 
     return NextResponse.json(response);
   } catch (error) {

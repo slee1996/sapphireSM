@@ -2,11 +2,9 @@ import { sql } from "@vercel/postgres";
 import { NextResponse } from "next/server";
 
 export async function GET(req) {
-  console.log('GET')
   const { searchParams } = new URL(req.url);
   const b64String = searchParams.get("b64_json");
   const revisedPrompt = searchParams.get("revised_prompt");
-  console.log("GET: ", b64String);
 
   try {
     if (!b64String || !revisedPrompt)

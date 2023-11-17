@@ -13,7 +13,7 @@ export default function Home() {
           alt=''
           className='m-4 rounded-full'
         />
-        <h1 className='text-xl'>SapphireSM</h1>
+        <h1 className='text-xl'>Thumbnailr</h1>
         <p>Your personal assistant for generating YouTube thumbnails</p>
       </div>
       <PastImages />
