@@ -152,12 +152,6 @@ const CanvasEditor = ({
           onMouseMove={draw}
         />
       </div>
-      {/* {editedImage ? (
-        <div>
-          Edited Image
-          <ImageComponent src={editedImage} width={400} height={400} alt='' />
-        </div>
-      ) : null} */}
     </div>
   );
 };
