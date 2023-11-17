@@ -1,43 +1,6 @@
 import { default as ImageComponent } from "next/image";
-import React, { useRef, useEffect, useState } from "react";
-
-function flipAlphaChannel(canvas: any) {
-  const ctx = canvas.getContext("2d");
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data; // RGBA values array
-
-  for (let i = 0; i < data.length; i += 4) {
-    data[i + 3] = 255 - data[i + 3]; // Invert the alpha channel
-  }
-
-  ctx.putImageData(imageData, 0, 0);
-}
-
-async function sendEdit({
-  image,
-  mask,
-  prompt,
-  setEditedImage,
-}: {
-  image: any;
-  mask: any;
-  prompt: any;
-  setEditedImage: any;
-}) {
-  flipAlphaChannel(mask.current);
-
-  const result = await fetch(`/api/edit-image`, {
-    method: "POST",
-    body: JSON.stringify({
-      image: image.current.toDataURL(),
-      mask: mask.current.toDataURL(),
-      prompt,
-    }),
-  });
-  const fixedResult = await result.json();
-
-  setEditedImage(fixedResult.data[0].url);
-}
+import { useRef, useEffect, useState } from "react";
+import { sendEdit } from "@/utils/send-edit";
 
 const CanvasEditor = ({
   src,
