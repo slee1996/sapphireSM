@@ -41,80 +41,102 @@ export default function Chat() {
 
   return (
     <>
-      <form className='w-full' onSubmit={onFormSubmit}>
-        <div>
-          <label htmlFor='textOverlayBool'>Add text overlay:</label>
+      <form
+        className='w-full bg-black text-white p-4 rounded-lg shadow-xl'
+        onSubmit={onFormSubmit}
+      >
+        <div className='mb-6'>
+          <label
+            htmlFor='textOverlayBool'
+            className='block mb-2 text-sm font-bold'
+          >
+            Add text overlay:
+          </label>
           <input
+            type='text'
             placeholder='Text for overlay (leave empty for no overlay)'
             value={state.textToAdd}
             disabled={isLoading}
             onChange={handleTextChange}
-            className='border border-gray-300 rounded-lg p-2 my-1 w-full text-black'
+            className='w-full bg-gray-800 text-white border-none rounded-full p-3 shadow-md focus:ring-2 focus:ring-blue-500 focus:outline-none'
           />
-          <span className='text-gray-500 italic'>
+          <span className='block mt-1 text-xs text-gray-400 italic'>
             Note that this feature is inconsistent, your text may suffer from
             quality issues
           </span>
         </div>
-        <div className='flex flex-row w-full space-x-2'>
-          <span className='w-full'>
-            <label htmlFor='sizeSelect'>Choose a style:</label>
+        <div className='flex flex-col md:flex-row md:space-x-4 mb-6'>
+          <div className='w-full mb-6 md:mb-0'>
+            <label
+              htmlFor='sizeSelect'
+              className='block mb-2 text-sm font-bold'
+            >
+              Choose a style:
+            </label>
             <select
               id='sizeSelect'
               name='size'
               value={state.style}
               disabled={isLoading}
               onChange={handleStyleChange}
-              className='border border-gray-300 rounded-lg p-2 my-1 w-full text-black capitalize'
+              className='w-full bg-gray-800 text-white border-none rounded-full p-3 shadow-md focus:ring-2 focus:ring-blue-500 focus:outline-none capitalize'
             >
               {styleOptions.map((styleOption) => (
                 <option
                   key={styleOption}
                   value={styleOption}
-                  title='This is a tooltip'
+                  className='bg-gray-700'
                 >
                   {styleOption}
                 </option>
               ))}
             </select>
-            <span className='text-gray-500 italic'>
+            <span className='block mt-1 text-xs text-gray-400 italic'>
               {state.style === "vivid"
-                ? " Model will lean towards hyper-real and dramatic images"
-                : " Model will lean towards more natural, less hyper-real images"}
+                ? "Model will lean towards hyper-real and dramatic images"
+                : "Model will lean towards more natural, less hyper-real images"}
             </span>
-          </span>
-          <span className='w-full'>
-            <label htmlFor='style'>Choose a size:</label>
+          </div>
+          <div className='w-full'>
+            <label htmlFor='style' className='block mb-2 text-sm font-bold'>
+              Choose a size:
+            </label>
             <select
               id='style'
               name='style'
               value={state.size}
               disabled={isLoading}
               onChange={handleSizeChange}
-              className='border border-gray-300 rounded-lg p-2 my-1 w-full text-black'
+              className='w-full bg-gray-800 text-white border-none rounded-full p-3 shadow-md focus:ring-2 focus:ring-blue-500 focus:outline-none'
             >
               {sizeOptions.map((sizeOption) => (
-                <option key={sizeOption} value={sizeOption}>
+                <option
+                  key={sizeOption}
+                  value={sizeOption}
+                  className='bg-gray-700'
+                >
                   {sizeOption}
                 </option>
               ))}
             </select>
-          </span>
+          </div>
         </div>
-        <h1>Image Prompt</h1>
-        <div className='relative bg-transparent'>
+        <label htmlFor='imagePrompt' className='block mb-2 text-sm font-bold'>
+            Image Prompt:
+          </label>
+        <div className='relative mb-6'>
           <input
-            id='input'
+            id='imagePrompt'
             disabled={isLoading}
-            className='text-black w-full border border-sky-600 rounded-lg p-2 my-1 focus:outline-none drop-shadow-xl pr-16'
             value={input}
-            placeholder="The world's cutest kitten huggin a dog"
             onChange={handleInputChange}
+            placeholder="The world's cutest kitten huggin a dog"
+            className='w-full bg-gray-800 text-white border border-sky-600 rounded-full p-3 shadow-md focus:outline-none'
           />
           <button
             disabled={isLoading}
             type='submit'
-            className='absolute text-black px-4 hover:text-blue-500 right-2 top-0 bottom-0 my-auto'
+            className='absolute right-0 top-1/2 mr-3 transform -translate-y-1/2 rounded-full bg-blue-500 text-white px-3 py-1 hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300'
           >
             {isLoading ? "Sending..." : "Send"}
           </button>
@@ -155,11 +177,11 @@ export default function Chat() {
                     width={Number(state.size.split("x")[0])}
                     height={Number(state.size.split("x")[1])}
                   />
-                  <h1>Edit Image:</h1>
+                  {/* <h1>Edit Image:</h1>
                   <CanvasEditor
                     originalPrompt={content.data[0].revised_prompt}
                     src={`data:image/jpeg;base64,${content.data[0].b64_json}`}
-                  />
+                  /> */}
                 </div>
               );
             })

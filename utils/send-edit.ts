@@ -4,15 +4,13 @@ export const sendEdit = async ({
   image,
   mask,
   prompt,
-  setEditedImage,
+  setImageEdits,
 }: {
   image: any;
   mask: any;
   prompt: any;
-  setEditedImage: any;
+  setImageEdits: any;
 }) => {
-  flipAlphaChannel(mask.current);
-
   const result = await fetch(`/api/edit-image`, {
     method: "POST",
     body: JSON.stringify({
@@ -23,5 +21,5 @@ export const sendEdit = async ({
   });
   const fixedResult = await result.json();
 
-  setEditedImage(fixedResult.data[0].url);
+  setImageEdits(fixedResult.data);
 };

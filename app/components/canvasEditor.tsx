@@ -14,29 +14,28 @@ const CanvasEditor = ({
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPoint, setStartPoint] = useState({ x: 0, y: 0 });
   const [imageEditPrompt, setImageEditPrompt] = useState(originalPrompt);
-  const [editedImage, setEditedImage] = useState<any>(null);
+  const [imageEdits, setImageEdits] = useState<any>(null);
 
   useEffect(() => {
-    // Get the canvas context
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
 
-    // Create a new image object
+    const maskCanvas = maskCanvasRef.current;
+    const maskContext = maskCanvas?.getContext("2d");
+
     const image = new Image();
 
-    // Set the source of the image
     image.src = src;
 
-    // Draw the image onto the canvas once it's loaded
     image.onload = () => {
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      maskContext.drawImage(image, 0, 0, maskCanvas.width, maskCanvas.height);
     };
 
-    // Optionally, clean up on unmount
     return () => {
       image.onload = null;
     };
-  }, [src]); // Re-run this effect if the src prop changes
+  }, [src]);
 
   const startDrawing = ({ nativeEvent }: { nativeEvent: any }) => {
     const { offsetX, offsetY } = nativeEvent;
@@ -57,40 +56,56 @@ const CanvasEditor = ({
     context.stroke();
   };
 
-  const stopDrawing = ({ nativeEvent }: { nativeEvent: any }) => {
+  const stopDrawing = () => {
     if (!isDrawing) {
       return;
     }
     const context = maskCanvasRef.current.getContext("2d");
-    context.lineTo(startPoint.x, startPoint.y); // Draw a line back to the start point
-    context.closePath(); // Close the path
+
+    context.lineTo(startPoint.x, startPoint.y);
+    context.closePath();
+
+    context.globalCompositeOperation = "destination-out";
+
     context.stroke();
     context.fill();
+
+    context.globalCompositeOperation = "source-over";
+
     setIsDrawing(false);
   };
 
   return (
     <div>
-      <div>
-        {editedImage ? (
-          <div>
-            Edited Image
-            <ImageComponent src={editedImage} width={400} height={400} alt='' />
-          </div>
-        ) : null}
+      <div className='flex flex-col'>
+        Image Edits
+        <div className='flex flex-row justify-evenly'>
+          {imageEdits
+            ? imageEdits.map((i: any, k: any) => (
+                <ImageComponent
+                  key={k}
+                  src={i.url}
+                  width={400}
+                  height={400}
+                  alt=''
+                />
+              ))
+            : null}
+        </div>
         Image Edit Prompt
         <textarea
           value={imageEditPrompt}
-          className='text-black w-full'
+          className='text-black m-4 rounded-xl px-4 py-1'
           onChange={(e) => setImageEditPrompt(e.target.value)}
         />
         <button
+          className='rounded-full bg-white m-2 text-black'
           onClick={() => {
             sendEdit({
               image: canvasRef,
               mask: maskCanvasRef,
               prompt: imageEditPrompt,
-              setEditedImage,
+              setImageEdits,
             });
           }}
         >
