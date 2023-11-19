@@ -17,7 +17,7 @@ export default function Home() {
             Thumbnailr
           </h1>
         </span>
-        <p className='font-semibold text-gray-300 mr-10'>
+        <p className='font-semibold text-gray-300 mr-10 invisible md:visible'>
           Crafting the future of YouTube thumbnails
         </p>
       </div>
