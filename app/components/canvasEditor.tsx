@@ -247,6 +247,19 @@ const CanvasEditor = ({
                 draw(e);
               }
             }}
+            onTouchStart={(e) => {
+              console.log('touch')
+              e.preventDefault();
+              startDrawing(e);
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              stopDrawing();
+            }}
+            onTouchMove={(e) => {
+              e.preventDefault();
+              draw(e);
+            }}
           />
         </div>
       </div>
