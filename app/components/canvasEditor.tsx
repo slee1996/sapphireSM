@@ -7,7 +7,7 @@ import {
   Frame,
   pasteIntoFrame,
 } from "@/utils/frame-utils";
-import { draw, startDrawing, stopDrawing } from "@/utils/draw-utils";
+// import { draw, startDrawing, stopDrawing } from "@/utils/draw-utils";
 
 const CanvasEditor = ({
   src,
@@ -98,6 +98,56 @@ const CanvasEditor = ({
 
   const handleMouseUp = () => {
     setIsDragging(false);
+  };
+
+  const startDrawing = ({ nativeEvent }: { nativeEvent: any }) => {
+    const { offsetX, offsetY } = nativeEvent;
+    setStartPoint({ x: offsetX, y: offsetY });
+
+    if (maskCanvasRef.current) {
+      const context = maskCanvasRef.current.getContext("2d");
+      if (context) {
+        context.beginPath();
+        context.moveTo(offsetX, offsetY);
+        setIsDrawing(true);
+      }
+    }
+  };
+
+  const draw = ({ nativeEvent }: { nativeEvent: any }) => {
+    if (!isDrawing) {
+      return;
+    }
+    const { offsetX, offsetY } = nativeEvent;
+    if (maskCanvasRef.current) {
+      const context = maskCanvasRef.current.getContext("2d");
+      if (context) {
+        context.lineTo(offsetX, offsetY);
+        context.stroke();
+      }
+    }
+  };
+
+  const stopDrawing = () => {
+    if (!isDrawing) {
+      return;
+    }
+    if (maskCanvasRef.current) {
+      const context = maskCanvasRef.current.getContext("2d");
+      if (context) {
+        context.lineTo(startPoint.x, startPoint.y);
+        context.closePath();
+
+        context.globalCompositeOperation = "destination-out";
+
+        context.stroke();
+        context.fill();
+
+        context.globalCompositeOperation = "source-over";
+
+        setIsDrawing(false);
+      }
+    }
   };
 
   return (
