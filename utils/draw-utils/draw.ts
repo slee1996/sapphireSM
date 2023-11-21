@@ -5,6 +5,7 @@ interface DrawProps {
 }
 
 export const draw = ({ nativeEvent, maskCanvasRef, isDrawing }: DrawProps) => {
+  console.log('draw')
   if (!isDrawing) {
     return;
   }
