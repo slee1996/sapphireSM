@@ -1,3 +1,4 @@
+export const maxDuration = 20;
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import fs from "fs";
@@ -40,9 +41,8 @@ export async function POST(req) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error:", error);
-    return new NextResponse(
-      JSON.stringify({ error: error.message }),
-      { status: error.statusCode || 500 }
-    );
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: error.statusCode || 500,
+    });
   }
 }
