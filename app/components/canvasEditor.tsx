@@ -1,20 +1,40 @@
 import { default as ImageComponent } from "next/image";
 import { useRef, useEffect, useState } from "react";
 import { sendEdit } from "@/utils/send-edit";
+import {
+  captureFrameContent,
+  drawFrame,
+  Frame,
+  pasteIntoFrame,
+} from "@/utils/frame-utils";
+import { draw, startDrawing, stopDrawing } from "@/utils/draw-utils";
 
 const CanvasEditor = ({
   src,
   originalPrompt,
+  width,
+  height,
 }: {
   src: string;
   originalPrompt: string;
+  width: number;
+  height: number;
 }) => {
-  const canvasRef: any = useRef(null);
-  const maskCanvasRef: any = useRef(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const maskCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvasDataUrl, setCanvasDataUrl] = useState(src);
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPoint, setStartPoint] = useState({ x: 0, y: 0 });
   const [imageEditPrompt, setImageEditPrompt] = useState(originalPrompt);
   const [imageEdits, setImageEdits] = useState<any>(null);
+  const [frame, setFrame] = useState<Frame>({
+    x: 50,
+    y: 50,
+    width: height / 3,
+    height: height / 3,
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -23,72 +43,90 @@ const CanvasEditor = ({
     const maskCanvas = maskCanvasRef.current;
     const maskContext = maskCanvas?.getContext("2d");
 
-    const image = new Image();
+    if (!context || !maskContext) return; // Ensure both contexts are available
 
-    image.src = src;
+    const image = new Image();
+    image.src = canvasDataUrl;
 
     image.onload = () => {
-      context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      maskContext.drawImage(image, 0, 0, maskCanvas.width, maskCanvas.height);
+      if (canvas && maskCanvas) {
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        maskContext.drawImage(image, 0, 0, maskCanvas.width, maskCanvas.height);
+        drawFrame({ frame, maskContext });
+      }
     };
 
     return () => {
       image.onload = null;
     };
-  }, [src]);
+  }, [canvasDataUrl, frame, canvasRef, maskCanvasRef]);
 
-  const startDrawing = ({ nativeEvent }: { nativeEvent: any }) => {
-    const { offsetX, offsetY } = nativeEvent;
-    setStartPoint({ x: offsetX, y: offsetY });
-    const context = maskCanvasRef.current.getContext("2d");
-    context.beginPath();
-    context.moveTo(offsetX, offsetY);
-    setIsDrawing(true);
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (maskCanvasRef.current) {
+      const rect = maskCanvasRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if (
+        x >= frame.x &&
+        x <= frame.x + frame.width &&
+        y >= frame.y &&
+        y <= frame.y + frame.height
+      ) {
+        setIsDragging(true);
+        setDragStart({ x: x - frame.x, y: y - frame.y });
+      }
+    }
   };
 
-  const draw = ({ nativeEvent }: { nativeEvent: any }) => {
-    if (!isDrawing) {
-      return;
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging) return;
+
+    if (maskCanvasRef.current) {
+      const rect = maskCanvasRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      // Update frame position
+      setFrame({
+        ...frame,
+        x: x - dragStart.x,
+        y: y - dragStart.y,
+      });
     }
-    const { offsetX, offsetY } = nativeEvent;
-    const context = maskCanvasRef.current.getContext("2d");
-    context.lineTo(offsetX, offsetY);
-    context.stroke();
   };
 
-  const stopDrawing = () => {
-    if (!isDrawing) {
-      return;
-    }
-    const context = maskCanvasRef.current.getContext("2d");
-
-    context.lineTo(startPoint.x, startPoint.y);
-    context.closePath();
-
-    context.globalCompositeOperation = "destination-out";
-
-    context.stroke();
-    context.fill();
-
-    context.globalCompositeOperation = "source-over";
-
-    setIsDrawing(false);
+  const handleMouseUp = () => {
+    setIsDragging(false);
   };
 
   return (
-    <div>
-      <div className='flex flex-col'>
+    <div className='w-full mb-10 flex flex-col justify-start items-start'>
+      <div className='flex flex-col w-full'>
         Image Edits
-        <div className='flex flex-row justify-evenly'>
+        <div className='flex flex-row justify-start overflow-x-scroll space-x-2 m-2'>
           {imageEdits
             ? imageEdits.map((i: any, k: any) => (
-                <ImageComponent
-                  key={k}
-                  src={i.url}
-                  width={400}
-                  height={400}
-                  alt=''
-                />
+                <div key={k}>
+                  <button
+                    onClick={() => {
+                      pasteIntoFrame({
+                        imageUrl: `data:image/jpeg;base64,${i.b64_json}`,
+                        canvasRef,
+                        frame,
+                        setCanvasDataUrl,
+                      });
+                    }}
+                  >
+                    Paste edit into original image
+                  </button>
+                  <ImageComponent
+                    src={`data:image/jpeg;base64,${i.b64_json}`}
+                    width={width}
+                    height={height}
+                    alt=''
+                  />
+                </div>
               ))
             : null}
         </div>
@@ -101,9 +139,14 @@ const CanvasEditor = ({
         <button
           className='rounded-full bg-white m-2 text-black'
           onClick={() => {
+            const imagesToSend = captureFrameContent({
+              canvasRef,
+              maskCanvasRef,
+              frame,
+            });
             sendEdit({
-              image: canvasRef,
-              mask: maskCanvasRef,
+              image: imagesToSend?.mainDataURL as string,
+              mask: imagesToSend?.maskDataURL as string,
               prompt: imageEditPrompt,
               setImageEdits,
             });
@@ -112,23 +155,67 @@ const CanvasEditor = ({
           Send image edit
         </button>
       </div>
-      <div className='relative'>
-        <canvas
-          ref={canvasRef}
-          width={400}
-          height={400}
-          className='absolute right-0 top-0'
-        />
-        <canvas
-          ref={maskCanvasRef}
-          width={400}
-          height={400}
-          className='absolute right-0 top-0'
-          onMouseDown={startDrawing}
-          onMouseUp={stopDrawing}
-          onMouseOut={stopDrawing}
-          onMouseMove={draw}
-        />
+      <a
+        href={canvasDataUrl}
+        title='Download Image'
+        download='generatedImage.jpg'
+      >
+        Download Image
+      </a>
+      <div className='relative w-full h-full mb-10 p-10'>
+        <div>
+          <canvas
+            ref={canvasRef}
+            width={width}
+            height={height}
+            className='absolute top-0 left-0 pb-10'
+          />
+          <canvas
+            ref={maskCanvasRef}
+            width={width}
+            height={height}
+            className='absolute top-0 left-0 pb-10'
+            onMouseDown={(e) => {
+              if (e.shiftKey) {
+                handleMouseDown(e);
+              } else {
+                startDrawing({
+                  nativeEvent: e,
+                  setStartPoint,
+                  maskCanvasRef,
+                  setIsDrawing,
+                });
+              }
+            }}
+            onMouseUp={(e) => {
+              if (e.shiftKey) {
+                handleMouseUp();
+              } else {
+                stopDrawing({
+                  isDrawing,
+                  maskCanvasRef,
+                  setIsDrawing,
+                  startPoint,
+                });
+              }
+            }}
+            onMouseOut={() =>
+              stopDrawing({
+                isDrawing,
+                maskCanvasRef,
+                setIsDrawing,
+                startPoint,
+              })
+            }
+            onMouseMove={(e) => {
+              if (e.shiftKey) {
+                handleMouseMove(e);
+              } else {
+                draw({ nativeEvent: e, maskCanvasRef, isDrawing });
+              }
+            }}
+          />
+        </div>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@
 :root {
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 17, 24, 39; /* This is like bg-gray-900 */
-  --background-end-rgb: 17, 24, 39; /* Also bg-gray-900 */
+  --background-end-rgb: 0, 24, 30; /* Also bg-gray-900 */
 }
 
 body {

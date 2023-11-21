@@ -6,8 +6,8 @@ import path from "path";
 function base64ToPng(base64, filename = "image.png") {
   const base64Data = base64.split(";base64,").pop();
 
-  // const tmpDir = "/tmp";
-  const filePath = path.join(__dirname, filename);
+  const tmpDir = "/tmp";
+  const filePath = path.join(tmpDir, filename);
 
   fs.writeFileSync(filePath, base64Data, { encoding: "base64" });
 
@@ -17,7 +17,6 @@ function base64ToPng(base64, filename = "image.png") {
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-// export const runtime = "edge";
 
 export async function POST(req) {
   try {
@@ -32,6 +31,7 @@ export async function POST(req) {
       mask: fs.createReadStream(pngMask),
       prompt,
       n: 3,
+      response_format: "b64_json",
     });
 
     fs.unlinkSync(pngImage);
@@ -42,7 +42,7 @@ export async function POST(req) {
     console.error("Error:", error);
     return new NextResponse(
       JSON.stringify({ error: error.message }),
-      { status: error.statusCode || 500 } // Use a default error status code if none is provided
+      { status: error.statusCode || 500 }
     );
   }
 }

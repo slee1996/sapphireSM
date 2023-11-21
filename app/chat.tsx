@@ -15,6 +15,7 @@ const defaultState = {
 
 export default function Chat() {
   const [state, setState] = useState(defaultState);
+  const [editImage, setEditImage] = useState(false);
 
   const { input, handleInputChange, handleSubmit, isLoading, messages } =
     useChat({
@@ -122,8 +123,8 @@ export default function Chat() {
           </div>
         </div>
         <label htmlFor='imagePrompt' className='block mb-2 text-sm font-bold'>
-            Image Prompt:
-          </label>
+          Image Prompt:
+        </label>
         <div className='relative mb-6'>
           <input
             id='imagePrompt'
@@ -142,7 +143,7 @@ export default function Chat() {
           </button>
         </div>
       </form>
-      <div className='my-4'>
+      <div className='my-4 w-full'>
         {isLoading ? (
           <div>Loading...</div>
         ) : (
@@ -156,7 +157,7 @@ export default function Chat() {
               return (
                 <div
                   key={`${url ?? content.data[0].b64_json}-${index}`}
-                  className='my-2 border border-white'
+                  className='my-2 border border-white w-full'
                 >
                   <a
                     href={
@@ -168,20 +169,29 @@ export default function Chat() {
                   >
                     Download Image
                   </a>
-                  <Image
-                    src={
-                      url ??
-                      `data:image/jpeg;base64,${content.data[0].b64_json}`
-                    }
-                    alt=''
-                    width={Number(state.size.split("x")[0])}
-                    height={Number(state.size.split("x")[1])}
-                  />
-                  {/* <h1>Edit Image:</h1>
-                  <CanvasEditor
-                    originalPrompt={content.data[0].revised_prompt}
-                    src={`data:image/jpeg;base64,${content.data[0].b64_json}`}
-                  /> */}
+                  <button
+                    onClick={() => setEditImage((currentVal) => !currentVal)}
+                  >
+                    Edit Image
+                  </button>
+                  {editImage ? (
+                    <CanvasEditor
+                      originalPrompt={content.data[0].revised_prompt}
+                      src={`data:image/jpeg;base64,${content.data[0].b64_json}`}
+                      width={Number(state.size.split("x")[0])}
+                      height={Number(state.size.split("x")[1])}
+                    />
+                  ) : (
+                    <Image
+                      src={
+                        url ??
+                        `data:image/jpeg;base64,${content.data[0].b64_json}`
+                      }
+                      alt=''
+                      width={Number(state.size.split("x")[0])}
+                      height={Number(state.size.split("x")[1])}
+                    />
+                  )}
                 </div>
               );
             })
