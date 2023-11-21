@@ -229,39 +229,22 @@ const CanvasEditor = ({
               if (e.shiftKey) {
                 handleMouseDown(e);
               } else {
-                startDrawing({
-                  nativeEvent: e,
-                  setStartPoint,
-                  maskCanvasRef,
-                  setIsDrawing,
-                });
+                startDrawing(e);
               }
             }}
             onMouseUp={(e) => {
               if (e.shiftKey) {
                 handleMouseUp();
               } else {
-                stopDrawing({
-                  isDrawing,
-                  maskCanvasRef,
-                  setIsDrawing,
-                  startPoint,
-                });
+                stopDrawing();
               }
             }}
-            onMouseOut={() =>
-              stopDrawing({
-                isDrawing,
-                maskCanvasRef,
-                setIsDrawing,
-                startPoint,
-              })
-            }
+            onMouseOut={() => stopDrawing()}
             onMouseMove={(e) => {
               if (e.shiftKey) {
                 handleMouseMove(e);
               } else {
-                draw({ nativeEvent: e, maskCanvasRef, isDrawing });
+                draw(e);
               }
             }}
           />
