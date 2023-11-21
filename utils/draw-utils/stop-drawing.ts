@@ -21,12 +21,8 @@ export const stopDrawing = ({
       context.lineTo(startPoint.x, startPoint.y);
       context.closePath();
 
-      context.globalCompositeOperation = "destination-out";
-
       context.stroke();
       context.fill();
-
-      context.globalCompositeOperation = "source-over";
 
       setIsDrawing(false);
     }
