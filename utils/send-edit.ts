@@ -3,6 +3,7 @@ interface EditImageParams {
   mask: string;
   prompt: string;
   setImageEdits: (edits: any) => void;
+  setLoading: (loading: any) => void;
 }
 
 export const sendEdit = async ({
@@ -10,6 +11,7 @@ export const sendEdit = async ({
   mask,
   prompt,
   setImageEdits,
+  setLoading
 }: EditImageParams) => {
   const result = await fetch(`/api/edit-image`, {
     method: "POST",
@@ -23,6 +25,7 @@ export const sendEdit = async ({
     }),
   });
   const fixedResult = await result.json();
+  setLoading(false)
 
   return setImageEdits(fixedResult.data);
 };

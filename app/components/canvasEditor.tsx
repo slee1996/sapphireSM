@@ -34,6 +34,7 @@ const CanvasEditor = ({
   });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -213,6 +214,34 @@ const CanvasEditor = ({
     }
   };
 
+  const dataURLToBlob = (dataURL: any) => {
+    const byteString = atob(dataURL.split(',')[1]);
+    const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+
+    return new Blob([ab], { type: mimeString });
+  };
+
+  const downloadImage = () => {
+    const blob = dataURLToBlob(canvasDataUrl);
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'generatedImage.jpg'; // Your desired file name
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
+  };
+
+
   return (
     <div className='w-full mb-10 flex flex-col justify-start items-start'>
       <div className='flex flex-col w-full'>
@@ -251,7 +280,9 @@ const CanvasEditor = ({
         />
         <button
           className='rounded-full bg-white m-2 text-black hover:bg-black hover:text-white'
+          disabled={loading}
           onClick={() => {
+            setLoading(true);
             const imagesToSend = captureFrameContent({
               canvasRef,
               maskCanvasRef,
@@ -262,20 +293,19 @@ const CanvasEditor = ({
               mask: imagesToSend?.maskDataURL as string,
               prompt: imageEditPrompt,
               setImageEdits,
+              setLoading,
             });
           }}
         >
-          Send image edit
+          {loading ? "Sending..." : "Send image edit"}
         </button>
       </div>
-      <a
-        href={canvasDataUrl}
-        title='Download Image'
-        download='generatedImage.jpg'
+      <button
         className='bg-white text-black rounded-full p-2 m-2 hover:bg-black hover:text-white'
+        onClick={downloadImage}
       >
-        Download Edited Image
-      </a>
+        {loading ? "Loading..." : "Download edited image"}
+      </button>
       <div>
         Adjust Frame Size{" "}
         <button
@@ -299,7 +329,8 @@ const CanvasEditor = ({
       <p>
         Shift+Click and drag on the frame to move it to the position you want,
         then draw on the picture with a click and drag to define any sections
-        that you want erased for inpainting. On mobile you can move the frame using two fingers.
+        that you want erased for inpainting. On mobile you can move the frame
+        using two fingers.
       </p>
       <p>
         Once the edited images have generated you will have the option to paste
@@ -384,11 +415,14 @@ const CanvasEditor = ({
             onTouchEnd={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              stopDrawing();
+
               if (e.touches.length === 2) {
                 handleMouseUp();
+                stopDrawing();
                 return;
               } else if (e.touches.length === 1) {
-                stopDrawing();
+                // alert('stop draw')
               }
             }}
             onTouchMove={(e) => {
