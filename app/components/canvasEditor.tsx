@@ -61,6 +61,33 @@ const CanvasEditor = ({
     };
   }, [canvasDataUrl, frame, canvasRef, maskCanvasRef]);
 
+  const adjustFrameSize = (increase = true) => {
+    setFrame((currentFrame) => {
+      // Define the increment or decrement value
+      const delta = increase ? 50 : -50;
+
+      // Calculate new dimensions
+      let newWidth = currentFrame.width + delta;
+      let newHeight = currentFrame.height + delta;
+
+      // Optionally add boundary checks
+      // Example: Ensure the frame does not become smaller than 50x50 or larger than a maximum size
+      newWidth = Math.max(50, newWidth); // Replace 50 with your minimum width if different
+      newHeight = Math.max(50, newHeight); // Replace 50 with your minimum height if different
+
+      // Optionally add maximum size checks
+      // Example: maxWidth and maxHeight are the maximum dimensions you want to allow
+      // newWidth = Math.min(newWidth, maxWidth);
+      // newHeight = Math.min(newHeight, maxHeight);
+
+      return {
+        ...currentFrame,
+        width: newWidth,
+        height: newHeight,
+      };
+    });
+  };
+
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (maskCanvasRef.current) {
       const rect = maskCanvasRef.current.getBoundingClientRect();
@@ -187,7 +214,7 @@ const CanvasEditor = ({
           onChange={(e) => setImageEditPrompt(e.target.value)}
         />
         <button
-          className='rounded-full bg-white m-2 text-black'
+          className='rounded-full bg-white m-2 text-black hover:bg-black hover:text-white'
           onClick={() => {
             const imagesToSend = captureFrameContent({
               canvasRef,
@@ -209,9 +236,48 @@ const CanvasEditor = ({
         href={canvasDataUrl}
         title='Download Image'
         download='generatedImage.jpg'
+        className='bg-white text-black rounded-full p-2 m-2 hover:bg-black hover:text-white'
       >
-        Download Image
+        Download Edited Image
       </a>
+      <div>
+        Adjust Frame Size{" "}
+        <button
+          onClick={() => adjustFrameSize(false)}
+          className='bg-white p-2 m-2 rounded-full text-black hover:bg-black hover:text-white'
+        >
+          -
+        </button>
+        <button
+          onClick={() => adjustFrameSize()}
+          className='bg-white p-2 m-2 rounded-full text-black hover:bg-black hover:text-white'
+        >
+          +
+        </button>
+      </div>
+      <p>EDITING INSTRUCTIONS</p>
+      <p>
+        The frame overlay on the picture below contains the area that will be
+        sent to the AI for editing.
+      </p>
+      <p>
+        Shift+Click and drag on the frame to move it to the position you want,
+        then draw on the picture with a click and drag to define any sections
+        that you want erased for inpainting.
+      </p>
+      <p>
+        Once the edited images have generated you will have the option to paste
+        them into the framed area. Don&#39;t move the frame or else the image
+        edits may end up in the wrong place!
+      </p>
+      <p>
+        If you are simply removing features from the image, leave the image edit
+        prompt alone. If you are wanting to generate new objects on the image
+        (e.g. add a castle on top of a mountain), it&#39;s best to erase the
+        populated prompt and replace it with one more focused on the specific
+        object you want to add (e.g. &ldquo;a majestic mountain with a massive
+        castle on top&ldquo;)
+      </p>
       <div className='relative w-full h-full mb-10 p-10'>
         <div>
           <canvas
@@ -248,7 +314,7 @@ const CanvasEditor = ({
               }
             }}
             onTouchStart={(e) => {
-              console.log('touch')
+              console.log("touch");
               e.preventDefault();
               startDrawing(e);
             }}
