@@ -88,11 +88,23 @@ const CanvasEditor = ({
     });
   };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const startRepositioning = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
     if (maskCanvasRef.current) {
       const rect = maskCanvasRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      let x, y;
+
+      // Check if it's a touch event
+      if (e.nativeEvent instanceof TouchEvent) {
+        const touch = e.nativeEvent.touches[0];
+        x = touch.clientX - rect.left;
+        y = touch.clientY - rect.top;
+      } else {
+        // It's a mouse event
+        x = (e as React.MouseEvent<HTMLCanvasElement>).clientX - rect.left;
+        y = (e as React.MouseEvent<HTMLCanvasElement>).clientY - rect.top;
+      }
 
       if (
         x >= frame.x &&
@@ -106,13 +118,26 @@ const CanvasEditor = ({
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const continueRepositioning = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
     if (!isDragging) return;
 
     if (maskCanvasRef.current) {
       const rect = maskCanvasRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      let x, y;
+
+      // Check if it's a touch event
+      if (e.nativeEvent instanceof TouchEvent) {
+        // Use the first touch point
+        const touch = e.nativeEvent.touches[0];
+        x = touch.clientX - rect.left;
+        y = touch.clientY - rect.top;
+      } else {
+        // It's a mouse event
+        x = (e as React.MouseEvent<HTMLCanvasElement>).clientX - rect.left;
+        y = (e as React.MouseEvent<HTMLCanvasElement>).clientY - rect.top;
+      }
 
       // Update frame position
       setFrame({
@@ -128,14 +153,27 @@ const CanvasEditor = ({
   };
 
   const startDrawing = ({ nativeEvent }: { nativeEvent: any }) => {
-    const { offsetX, offsetY } = nativeEvent;
-    setStartPoint({ x: offsetX, y: offsetY });
+    let x, y;
+
+    if (nativeEvent.touches) {
+      x =
+        nativeEvent.touches[0].clientX -
+        nativeEvent.target.getBoundingClientRect().left;
+      y =
+        nativeEvent.touches[0].clientY -
+        nativeEvent.target.getBoundingClientRect().top;
+    } else {
+      x = nativeEvent.offsetX;
+      y = nativeEvent.offsetY;
+    }
+
+    setStartPoint({ x, y });
 
     if (maskCanvasRef.current) {
       const context = maskCanvasRef.current.getContext("2d");
       if (context) {
         context.beginPath();
-        context.moveTo(offsetX, offsetY);
+        context.moveTo(x, y);
         setIsDrawing(true);
       }
     }
@@ -145,11 +183,25 @@ const CanvasEditor = ({
     if (!isDrawing) {
       return;
     }
-    const { offsetX, offsetY } = nativeEvent;
+
+    let x, y;
+
+    if (nativeEvent.touches) {
+      x =
+        nativeEvent.touches[0].clientX -
+        nativeEvent.target.getBoundingClientRect().left;
+      y =
+        nativeEvent.touches[0].clientY -
+        nativeEvent.target.getBoundingClientRect().top;
+    } else {
+      x = nativeEvent.offsetX;
+      y = nativeEvent.offsetY;
+    }
+
     if (maskCanvasRef.current) {
       const context = maskCanvasRef.current.getContext("2d");
       if (context) {
-        context.lineTo(offsetX, offsetY);
+        context.lineTo(x, y);
         context.stroke();
       }
     }
@@ -263,7 +315,7 @@ const CanvasEditor = ({
       <p>
         Shift+Click and drag on the frame to move it to the position you want,
         then draw on the picture with a click and drag to define any sections
-        that you want erased for inpainting.
+        that you want erased for inpainting. On mobile you can move the frame using two fingers.
       </p>
       <p>
         Once the edited images have generated you will have the option to paste
@@ -284,21 +336,41 @@ const CanvasEditor = ({
             ref={canvasRef}
             width={width}
             height={height}
-            className='absolute top-0 left-0 pb-10'
+            className='absolute top-0 left-0 pb-10 touch-none'
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onMouseMove={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onTouchMove={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
           />
           <canvas
             ref={maskCanvasRef}
             width={width}
             height={height}
-            className='absolute top-0 left-0 pb-10'
+            className='absolute top-0 left-0 pb-10 touch-none'
             onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               if (e.shiftKey) {
-                handleMouseDown(e);
+                startRepositioning(e);
               } else {
                 startDrawing(e);
               }
             }}
             onMouseUp={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               if (e.shiftKey) {
                 handleMouseUp();
               } else {
@@ -307,24 +379,43 @@ const CanvasEditor = ({
             }}
             onMouseOut={() => stopDrawing()}
             onMouseMove={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               if (e.shiftKey) {
-                handleMouseMove(e);
+                continueRepositioning(e);
               } else {
                 draw(e);
               }
             }}
             onTouchStart={(e) => {
-              console.log("touch");
               e.preventDefault();
-              startDrawing(e);
+              e.stopPropagation();
+              if (e.touches.length === 2) {
+                startRepositioning(e);
+                return;
+              } else if (e.touches.length === 1) {
+                startDrawing(e);
+              }
             }}
             onTouchEnd={(e) => {
               e.preventDefault();
-              stopDrawing();
+              e.stopPropagation();
+              if (e.touches.length === 2) {
+                handleMouseUp();
+                return;
+              } else if (e.touches.length === 1) {
+                stopDrawing();
+              }
             }}
             onTouchMove={(e) => {
               e.preventDefault();
-              draw(e);
+              e.stopPropagation();
+              if (e.touches.length === 2) {
+                continueRepositioning(e);
+                return;
+              } else if (e.touches.length === 1) {
+                draw(e);
+              }
             }}
           />
         </div>
