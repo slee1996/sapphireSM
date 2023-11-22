@@ -7,7 +7,6 @@ import {
   Frame,
   pasteIntoFrame,
 } from "@/utils/frame-utils";
-// import { draw, startDrawing, stopDrawing } from "@/utils/draw-utils";
 
 const CanvasEditor = ({
   src,
@@ -43,7 +42,7 @@ const CanvasEditor = ({
     const maskCanvas = maskCanvasRef.current;
     const maskContext = maskCanvas?.getContext("2d");
 
-    if (!context || !maskContext) return; // Ensure both contexts are available
+    if (!context || !maskContext) return;
 
     const image = new Image();
     image.src = canvasDataUrl;
@@ -63,22 +62,13 @@ const CanvasEditor = ({
 
   const adjustFrameSize = (increase = true) => {
     setFrame((currentFrame) => {
-      // Define the increment or decrement value
       const delta = increase ? 50 : -50;
 
-      // Calculate new dimensions
       let newWidth = currentFrame.width + delta;
       let newHeight = currentFrame.height + delta;
 
-      // Optionally add boundary checks
-      // Example: Ensure the frame does not become smaller than 50x50 or larger than a maximum size
-      newWidth = Math.max(50, newWidth); // Replace 50 with your minimum width if different
-      newHeight = Math.max(50, newHeight); // Replace 50 with your minimum height if different
-
-      // Optionally add maximum size checks
-      // Example: maxWidth and maxHeight are the maximum dimensions you want to allow
-      // newWidth = Math.min(newWidth, maxWidth);
-      // newHeight = Math.min(newHeight, maxHeight);
+      newWidth = Math.max(50, newWidth);
+      newHeight = Math.max(50, newHeight);
 
       return {
         ...currentFrame,
@@ -95,13 +85,11 @@ const CanvasEditor = ({
       const rect = maskCanvasRef.current.getBoundingClientRect();
       let x, y;
 
-      // Check if it's a touch event
       if (e.nativeEvent instanceof TouchEvent) {
         const touch = e.nativeEvent.touches[0];
         x = touch.clientX - rect.left;
         y = touch.clientY - rect.top;
       } else {
-        // It's a mouse event
         x = (e as React.MouseEvent<HTMLCanvasElement>).clientX - rect.left;
         y = (e as React.MouseEvent<HTMLCanvasElement>).clientY - rect.top;
       }
@@ -127,19 +115,15 @@ const CanvasEditor = ({
       const rect = maskCanvasRef.current.getBoundingClientRect();
       let x, y;
 
-      // Check if it's a touch event
       if (e.nativeEvent instanceof TouchEvent) {
-        // Use the first touch point
         const touch = e.nativeEvent.touches[0];
         x = touch.clientX - rect.left;
         y = touch.clientY - rect.top;
       } else {
-        // It's a mouse event
         x = (e as React.MouseEvent<HTMLCanvasElement>).clientX - rect.left;
         y = (e as React.MouseEvent<HTMLCanvasElement>).clientY - rect.top;
       }
 
-      // Update frame position
       setFrame({
         ...frame,
         x: x - dragStart.x,
