@@ -21,7 +21,7 @@ export default function Home() {
           Crafting the future of YouTube thumbnails
         </p>
       </div>
-      <main className='flex flex-col items-start justify-start px-16 py-4 space-y-6 bg-gray-900 text-gray-300'>
+      <main className='flex flex-col items-start justify-start px-1 md:px-8 py-4 space-y-6 bg-gray-900 text-gray-300 min-h-screen'>
         <Chat />
       </main>
     </>

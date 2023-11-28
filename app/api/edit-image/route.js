@@ -8,7 +8,7 @@ function base64ToPng(base64, filename = "image.png") {
   const base64Data = base64.split(";base64,").pop();
 
   const tmpDir = "/tmp";
-  const filePath = path.join(tmpDir, filename);
+  const filePath = path.join(__dirname, filename);
 
   fs.writeFileSync(filePath, base64Data, { encoding: "base64" });
 
@@ -35,8 +35,8 @@ export async function POST(req) {
       response_format: "b64_json",
     });
 
-    fs.unlinkSync(pngImage);
-    fs.unlinkSync(pngMask);
+    // fs.unlinkSync(pngImage);
+    // fs.unlinkSync(pngMask);
 
     return NextResponse.json(response);
   } catch (error) {

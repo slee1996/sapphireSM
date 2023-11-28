@@ -8,6 +8,13 @@ import {
   pasteIntoFrame,
 } from "@/utils/frame-utils";
 
+const frameDefaults: Frame = {
+  x: 50,
+  y: 50,
+  width: 340,
+  height: 340,
+};
+
 const CanvasEditor = ({
   src,
   originalPrompt,
@@ -50,16 +57,35 @@ const CanvasEditor = ({
 
     image.onload = () => {
       if (canvas && maskCanvas) {
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        maskContext.drawImage(image, 0, 0, maskCanvas.width, maskCanvas.height);
-        drawFrame({ frame, maskContext });
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        context.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight);
+
+        maskCanvas.width = image.naturalWidth;
+        maskCanvas.height = image.naturalHeight;
+        // Initialize the frame on the mask canvas, if needed.
+        drawFrame({ frame: frameDefaults, maskContext });
       }
     };
 
     return () => {
       image.onload = null;
     };
-  }, [canvasDataUrl, frame, canvasRef, maskCanvasRef]);
+  }, [canvasDataUrl, canvasRef, maskCanvasRef]);
+
+  useEffect(() => {
+    const maskCanvas = maskCanvasRef.current;
+    const maskContext = maskCanvas?.getContext("2d");
+
+    if (!maskContext) return;
+    if (maskCanvas) {
+      // Clear the previous frame drawing
+      maskContext.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+
+      // Draw the frame at the new position
+      drawFrame({ frame, maskContext });
+    }
+  }, [frame, maskCanvasRef]);
 
   const adjustFrameSize = (increase = true) => {
     setFrame((currentFrame) => {
@@ -83,17 +109,18 @@ const CanvasEditor = ({
     e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
   ) => {
     if (maskCanvasRef.current) {
-      const rect = maskCanvasRef.current.getBoundingClientRect();
-      let x, y;
+      let clientX, clientY;
 
       if (e.nativeEvent instanceof TouchEvent) {
         const touch = e.nativeEvent.touches[0];
-        x = touch.clientX - rect.left;
-        y = touch.clientY - rect.top;
+        clientX = touch.clientX;
+        clientY = touch.clientY;
       } else {
-        x = (e as React.MouseEvent<HTMLCanvasElement>).clientX - rect.left;
-        y = (e as React.MouseEvent<HTMLCanvasElement>).clientY - rect.top;
+        clientX = (e as React.MouseEvent<HTMLCanvasElement>).clientX;
+        clientY = (e as React.MouseEvent<HTMLCanvasElement>).clientY;
       }
+
+      const { x, y } = getMousePos(maskCanvasRef.current, clientX, clientY);
 
       if (
         x >= frame.x &&
@@ -110,113 +137,123 @@ const CanvasEditor = ({
   const continueRepositioning = (
     e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
   ) => {
-    if (!isDragging) return;
+    if (!isDragging || !maskCanvasRef.current) return;
 
-    if (maskCanvasRef.current) {
-      const rect = maskCanvasRef.current.getBoundingClientRect();
-      let x, y;
+    let clientX, clientY;
 
-      if (e.nativeEvent instanceof TouchEvent) {
-        const touch = e.nativeEvent.touches[0];
-        x = touch.clientX - rect.left;
-        y = touch.clientY - rect.top;
-      } else {
-        x = (e as React.MouseEvent<HTMLCanvasElement>).clientX - rect.left;
-        y = (e as React.MouseEvent<HTMLCanvasElement>).clientY - rect.top;
-      }
-
-      setFrame({
-        ...frame,
-        x: x - dragStart.x,
-        y: y - dragStart.y,
-      });
+    if (e.nativeEvent instanceof TouchEvent) {
+      const touch = e.nativeEvent.touches[0];
+      clientX = touch.clientX;
+      clientY = touch.clientY;
+    } else {
+      clientX = (e as React.MouseEvent<HTMLCanvasElement>).clientX;
+      clientY = (e as React.MouseEvent<HTMLCanvasElement>).clientY;
     }
+
+    const { x, y } = getMousePos(maskCanvasRef.current, clientX, clientY);
+
+    setFrame({
+      ...frame,
+      x: x - dragStart.x,
+      y: y - dragStart.y,
+    });
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
   };
 
+  const getMousePos = (canvas: any, x: any, y: any) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const scaledX = (x - rect.left) * scaleX;
+    const scaledY = (y - rect.top) * scaleY;
+
+    return { x: scaledX, y: scaledY };
+  };
+
   const startDrawing = ({ nativeEvent }: { nativeEvent: any }) => {
-    let x, y;
+    if (!isDrawing) {
+      const canvas = maskCanvasRef.current;
+      if (!canvas) return;
 
-    if (nativeEvent.touches) {
-      x =
-        nativeEvent.touches[0].clientX -
-        nativeEvent.target.getBoundingClientRect().left;
-      y =
-        nativeEvent.touches[0].clientY -
-        nativeEvent.target.getBoundingClientRect().top;
-    } else {
-      x = nativeEvent.offsetX;
-      y = nativeEvent.offsetY;
-    }
+      let x, y;
 
-    setStartPoint({ x, y });
+      if (nativeEvent.touches) {
+        x = nativeEvent.touches[0].clientX;
+        y = nativeEvent.touches[0].clientY;
+      } else {
+        x = nativeEvent.clientX;
+        y = nativeEvent.clientY;
+      }
 
-    if (maskCanvasRef.current) {
-      const context = maskCanvasRef.current.getContext("2d");
+      const { x: scaledX, y: scaledY } = getMousePos(canvas, x, y);
+      setStartPoint({ x: scaledX, y: scaledY });
+
+      const context = canvas.getContext("2d");
       if (context) {
         context.beginPath();
-        context.moveTo(x, y);
+        context.moveTo(scaledX, scaledY);
         setIsDrawing(true);
       }
     }
   };
 
   const draw = ({ nativeEvent }: { nativeEvent: any }) => {
-    if (!isDrawing) {
-      return;
-    }
+    if (!isDrawing) return;
+
+    const canvas = maskCanvasRef.current;
+    if (!canvas) return;
 
     let x, y;
 
     if (nativeEvent.touches) {
-      x =
-        nativeEvent.touches[0].clientX -
-        nativeEvent.target.getBoundingClientRect().left;
-      y =
-        nativeEvent.touches[0].clientY -
-        nativeEvent.target.getBoundingClientRect().top;
+      // For touch devices
+      x = nativeEvent.touches[0].clientX;
+      y = nativeEvent.touches[0].clientY;
     } else {
-      x = nativeEvent.offsetX;
-      y = nativeEvent.offsetY;
+      // For mouse events
+      x = nativeEvent.clientX;
+      y = nativeEvent.clientY;
     }
 
-    if (maskCanvasRef.current) {
-      const context = maskCanvasRef.current.getContext("2d");
-      if (context) {
-        context.lineTo(x, y);
-        context.stroke();
-      }
+    const { x: scaledX, y: scaledY } = getMousePos(canvas, x, y);
+    const context = canvas.getContext("2d");
+
+    if (context) {
+      context.lineTo(scaledX, scaledY);
+      context.stroke();
     }
   };
 
   const stopDrawing = () => {
-    if (!isDrawing) {
-      return;
-    }
-    if (maskCanvasRef.current) {
-      const context = maskCanvasRef.current.getContext("2d");
-      if (context) {
-        context.lineTo(startPoint.x, startPoint.y);
-        context.closePath();
+    if (!isDrawing) return;
 
-        context.globalCompositeOperation = "destination-out";
+    const canvas = maskCanvasRef.current;
+    if (!canvas) return;
 
-        context.stroke();
-        context.fill();
+    const context = canvas.getContext("2d");
+    if (context) {
+      // Use the scaled startPoint here
+      context.lineTo(startPoint.x, startPoint.y);
+      context.closePath();
 
-        context.globalCompositeOperation = "source-over";
+      context.globalCompositeOperation = "destination-out";
 
-        setIsDrawing(false);
-      }
+      context.stroke();
+      context.fill();
+
+      context.globalCompositeOperation = "source-over";
+
+      setIsDrawing(false);
     }
   };
 
   const dataURLToBlob = (dataURL: any) => {
-    const byteString = atob(dataURL.split(',')[1]);
-    const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+    const byteString = atob(dataURL.split(",")[1]);
+    const mimeString = dataURL.split(",")[0].split(":")[1].split(";")[0];
 
     const ab = new ArrayBuffer(byteString.length);
     const ia = new Uint8Array(ab);
@@ -231,16 +268,15 @@ const CanvasEditor = ({
     const blob = dataURLToBlob(canvasDataUrl);
     const url = URL.createObjectURL(blob);
 
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'generatedImage.jpg'; // Your desired file name
+    a.download = "generatedImage.jpg";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
 
     URL.revokeObjectURL(url);
   };
-
 
   return (
     <div className='w-full mb-10 flex flex-col justify-start items-start'>
@@ -272,7 +308,34 @@ const CanvasEditor = ({
               ))
             : null}
         </div>
-        Image Edit Prompt
+        <div>
+          <p>EDITING INSTRUCTIONS</p>
+          <p>
+            The frame overlay on the picture below contains the area that will
+            be sent to the AI for editing.
+          </p>
+          <p>
+            Shift+Click and drag on the frame to move it to the position you
+            want, then draw on the picture with a click and drag to define any
+            sections that you want erased for inpainting. On mobile you can move
+            the frame using two fingers.
+          </p>
+          <p>
+            Once the edited images have generated you will have the option to
+            paste them into the framed area. Don&#39;t move the frame or else
+            the image edits may end up in the wrong place!
+          </p>
+          <p>
+            If you are simply removing features from the image, leave the image
+            edit prompt alone. If you are wanting to generate new objects on the
+            image (e.g. add a castle on top of a mountain), it&#39;s best to
+            erase the populated prompt and replace it with one more focused on
+            the specific object you want to add (e.g. &ldquo;a majestic mountain
+            with a massive castle on top&ldquo;)
+          </p>
+          <hr />
+        </div>
+        <h1>Image Edit Prompt</h1>
         <textarea
           value={imageEditPrompt}
           className='text-black m-4 rounded-xl px-4 py-1'
@@ -306,52 +369,58 @@ const CanvasEditor = ({
       >
         {loading ? "Loading..." : "Download edited image"}
       </button>
-      <div>
-        Adjust Frame Size{" "}
-        <button
-          onClick={() => adjustFrameSize(false)}
-          className='bg-white p-2 m-2 rounded-full text-black hover:bg-black hover:text-white'
-        >
-          -
-        </button>
-        <button
-          onClick={() => adjustFrameSize()}
-          className='bg-white p-2 m-2 rounded-full text-black hover:bg-black hover:text-white'
-        >
-          +
-        </button>
+      <div className='flex flex-row justify-start'>
+        <div className='flex flex-row justify-start'>
+          Adjust Frame Size{" "}
+          <button
+            onClick={() => adjustFrameSize(false)}
+            className='bg-white p-2 m-2 rounded-full text-black hover:bg-black hover:text-white'
+          >
+            -
+          </button>
+          <button
+            onClick={() => adjustFrameSize()}
+            className='bg-white p-2 m-2 rounded-full text-black hover:bg-black hover:text-white'
+          >
+            +
+          </button>
+        </div>
+        <div className='flex flex-row justify-start'>
+          {imageEdits
+            ? imageEdits.map((i: any, k: any) => (
+                <span key={k} className='w-1/6 group'>
+                  <button
+                    onClick={() => {
+                      pasteIntoFrame({
+                        imageUrl: `data:image/jpeg;base64,${i.b64_json}`,
+                        canvasRef,
+                        frame,
+                        setCanvasDataUrl,
+                      });
+                    }}
+                  >
+                    Paste edit
+                  </button>
+                  <ImageComponent
+                    src={`data:image/jpeg;base64,${i.b64_json}`}
+                    width={width}
+                    height={height}
+                    alt=''
+                    className={`w-1/4 group-hover:w-1/3 m-0 group-hover:absolute group-hover:z-50`}
+                  />
+                </span>
+              ))
+            : null}
+        </div>
       </div>
-      <p>EDITING INSTRUCTIONS</p>
-      <p>
-        The frame overlay on the picture below contains the area that will be
-        sent to the AI for editing.
-      </p>
-      <p>
-        Shift+Click and drag on the frame to move it to the position you want,
-        then draw on the picture with a click and drag to define any sections
-        that you want erased for inpainting. On mobile you can move the frame
-        using two fingers.
-      </p>
-      <p>
-        Once the edited images have generated you will have the option to paste
-        them into the framed area. Don&#39;t move the frame or else the image
-        edits may end up in the wrong place!
-      </p>
-      <p>
-        If you are simply removing features from the image, leave the image edit
-        prompt alone. If you are wanting to generate new objects on the image
-        (e.g. add a castle on top of a mountain), it&#39;s best to erase the
-        populated prompt and replace it with one more focused on the specific
-        object you want to add (e.g. &ldquo;a majestic mountain with a massive
-        castle on top&ldquo;)
-      </p>
+
       <div className='relative w-full h-full mb-10 p-10'>
         <div>
           <canvas
             ref={canvasRef}
             width={width}
             height={height}
-            className='absolute top-0 left-0 pb-10 touch-none'
+            className='absolute top-0 left-0 pb-10 touch-none max-w-full'
             onMouseDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -373,7 +442,7 @@ const CanvasEditor = ({
             ref={maskCanvasRef}
             width={width}
             height={height}
-            className='absolute top-0 left-0 pb-10 touch-none'
+            className='absolute top-0 left-0 pb-10 touch-none max-w-full'
             onMouseDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -416,13 +485,12 @@ const CanvasEditor = ({
               e.preventDefault();
               e.stopPropagation();
               stopDrawing();
-
               if (e.touches.length === 2) {
                 handleMouseUp();
                 stopDrawing();
                 return;
               } else if (e.touches.length === 1) {
-                // alert('stop draw')
+                return stopDrawing();
               }
             }}
             onTouchMove={(e) => {
