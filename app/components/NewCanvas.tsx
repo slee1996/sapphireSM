@@ -356,12 +356,6 @@ export const NewCanvas = () => {
             }
           }}
           onTouchEnd={(e) => {
-            const touch = e.touches[0];
-            const hoverStatus = checkHover({
-              clientX: touch.clientX,
-              clientY: touch.clientY,
-              nativeEvent: e.nativeEvent,
-            });
             setIsDragging(false);
             setIsDraggingImage(false);
             setFrameHover(false);
