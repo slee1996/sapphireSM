@@ -2,7 +2,6 @@
 import { useChat } from "ai/react";
 import Image from "next/image";
 import { useState } from "react";
-import CanvasEditor from "./components/canvasEditor";
 import { NewCanvas } from "./components/NewCanvas";
 
 const sizeOptions = ["1024x1024", "1792x1024", "1024x1792"];
@@ -203,14 +202,7 @@ export default function Chat() {
         </div>
       </div>
       <div>
-        {imageToEdit.url.length > 0 && editImage ? (
-          <CanvasEditor
-            originalPrompt={imageToEdit.prompt}
-            src={imageToEdit.url}
-            width={Number(state.size.split("x")[0])}
-            height={Number(state.size.split("x")[1])}
-          />
-        ) : null}
+      
         <NewCanvas />
       </div>
     </div>
