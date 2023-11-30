@@ -1,4 +1,4 @@
-export const maxDuration = 20;
+export const maxDuration = 40;
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import fs from "fs";
