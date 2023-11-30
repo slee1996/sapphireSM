@@ -9,48 +9,86 @@ interface CaptureFrameContentProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
   maskCanvasRef: React.RefObject<HTMLCanvasElement>;
   frame: Frame;
+  img: any;
+  zoom: any;
+  positionX: any;
+  positionY: any;
+  scaledFrame: any;
 }
 
 export const captureFrameContent = ({
   canvasRef,
   maskCanvasRef,
   frame,
+  img,
+  zoom,
+  positionX,
+  positionY,
+  scaledFrame,
 }: CaptureFrameContentProps) => {
-  const maskContext = maskCanvasRef.current?.getContext("2d");
-  const mainContext = canvasRef.current?.getContext("2d");
+  const onscreenContext = maskCanvasRef.current?.getContext("2d"); // onscreen canvas
+  const offscreenContext = canvasRef.current?.getContext("2d"); // offscreen canvas
+  const imgCanvas = document.createElement("canvas");
+  const imgContext = imgCanvas.getContext("2d");
 
-  if (!maskContext || !mainContext) {
+  if (imgContext) {
+    imgCanvas.width = img.width;
+    imgCanvas.height = img.height;
+    imgContext.drawImage(
+      img,
+      0,
+      0,
+      img.width,
+      img.height,
+      0,
+      0,
+      img.width,
+      img.height
+    );
+  }
+
+  if (!onscreenContext || !offscreenContext) {
     return;
   }
 
-  const maskFrameData = maskContext.getImageData(
-    frame.x,
-    frame.y,
-    frame.width,
-    frame.height
+  const hRatio = (onscreenContext.canvas.width / img.width / 2) * zoom;
+  const vRatio = (onscreenContext.canvas.height / img.height / 2) * zoom;
+  const ratio = Math.min(hRatio, vRatio);
+  const inverseRatio = 1 / ratio;
+
+  const mainFrameData = imgContext?.getImageData(
+    positionX,
+    positionY,
+    scaledFrame.frameWidth,
+    scaledFrame.frameHeight
   );
-  const mainFrameData = mainContext.getImageData(
-    frame.x,
-    frame.y,
-    frame.width,
-    frame.height
+  const maskFrameData = offscreenContext.getImageData(
+    positionX,
+    positionY,
+    scaledFrame.frameWidth,
+    scaledFrame.frameHeight
   );
 
   const maskTempCanvas = document.createElement("canvas");
-  maskTempCanvas.width = frame.width;
-  maskTempCanvas.height = frame.height;
+  maskTempCanvas.width = scaledFrame.frameWidth;
+  maskTempCanvas.height = scaledFrame.frameHeight;
   const maskTempContext = maskTempCanvas.getContext("2d");
 
   const mainTempCanvas = document.createElement("canvas");
-  mainTempCanvas.width = frame.width;
-  mainTempCanvas.height = frame.height;
+  mainTempCanvas.width = scaledFrame.frameWidth;
+  mainTempCanvas.height = scaledFrame.frameHeight;
   const mainTempContext = mainTempCanvas.getContext("2d");
 
-  maskTempContext?.putImageData(maskFrameData, 0, 0);
-  mainTempContext?.putImageData(mainFrameData, 0, 0);
+  if (maskFrameData && mainFrameData) {
+    maskTempContext?.putImageData(maskFrameData, 0, 0);
+    mainTempContext?.putImageData(mainFrameData, 0, 0);
+  }
 
   const maskDataURL = maskTempCanvas.toDataURL("image/png");
   const mainDataURL = mainTempCanvas.toDataURL("image/png");
+
+  maskTempCanvas.remove();
+  mainTempCanvas.remove();
 
   return {
     maskDataURL,

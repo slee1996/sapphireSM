@@ -48,7 +48,7 @@ export default function Chat() {
     <div className='flex flex-col w-full'>
       <div className='flex flex-row space-x-2 h-1/2'>
         <form
-          className='w-full bg-black text-white p-4 rounded-lg shadow-xl h-1/2 flex flex-col space-y-2'
+          className='w-full bg-black text-white p-4 rounded-lg shadow-xl h-[26rem] flex flex-col space-y-2'
           onSubmit={onFormSubmit}
         >
           <div className=''>
@@ -103,7 +103,7 @@ export default function Chat() {
                   : "Model will lean towards more natural, less hyper-real images"}
               </span>
             </div>
-            <div className='w-full'>
+            {/* <div className='w-full'>
               <label htmlFor='style' className='block mb-2 text-sm font-bold'>
                 Choose a size:
               </label>
@@ -125,7 +125,7 @@ export default function Chat() {
                   </option>
                 ))}
               </select>
-            </div>
+            </div> */}
           </div>
           <label htmlFor='imagePrompt' className='block mb-2 text-sm font-bold'>
             Image Prompt:
@@ -146,7 +146,7 @@ export default function Chat() {
             {isLoading ? "Sending..." : "Send"}
           </button>
         </form>
-        <div className='w-full bg-black text-white p-4 rounded-lg shadow-xl overflow-y-scroll max-h-1/2'>
+        <div className='w-full bg-black text-white p-4 rounded-lg shadow-xl overflow-y-scroll h-[26rem]'>
           <h1>Generated Images</h1>
           {isLoading ? (
             <div>Loading...</div>
@@ -202,8 +202,7 @@ export default function Chat() {
         </div>
       </div>
       <div>
-      
-        <NewCanvas />
+        <NewCanvas testImg={imageToEdit.url} />
       </div>
     </div>
   );

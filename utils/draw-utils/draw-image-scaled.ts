@@ -38,10 +38,16 @@ export const drawImageScaled = ({
     0,
     img.width,
     img.height,
-    centerShift_x,
-    centerShift_y,
+    positionX,
+    positionY,
     scaledWidth,
     scaledHeight
   );
   ctx.globalAlpha = 1;
+  return {
+    positionX,
+    positionY,
+    scaledWidth,
+    scaledHeight
+  }
 };

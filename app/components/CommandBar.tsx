@@ -3,11 +3,17 @@ export const CommandBar = ({
   setFrame,
   isDrawing,
   setIsDrawing,
+  editPrompt,
+  setEditPrompt,
+  captureHandler,
 }: {
   zoom: (zoomFactor: number) => void;
   setFrame: any;
   isDrawing: boolean;
   setIsDrawing: (value: any) => void;
+  editPrompt: string;
+  setEditPrompt: (value: any) => void;
+  captureHandler: any;
 }) => {
   return (
     <div className='md:absolute md:top-0 md:left-0 p-0 md:p-1 md:m-0 m-2 space-x-1 flex items-center'>
@@ -74,7 +80,7 @@ export const CommandBar = ({
         </div>
       </div>
       <div>
-        Draw
+        Eraser
         <div className='flex items-center space-x-2'>
           <div className='relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in'>
             <input
@@ -93,6 +99,21 @@ export const CommandBar = ({
             ></label>
           </div>
         </div>
+      </div>
+      <div>
+        <label>Edit Prompt: </label>
+        <input
+          className='text-black w-full'
+          placeholder='Describe your desired change here'
+          value={editPrompt}
+          onChange={(e) => setEditPrompt(e.target.value)}
+        />
+        <button
+          className='rounded-full bg-blue-500 hover:bg-blue-600 p-1 text-black my-1'
+          onClick={() => captureHandler()}
+        >
+          Send Edit
+        </button>
       </div>
     </div>
   );

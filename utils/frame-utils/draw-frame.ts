@@ -18,10 +18,12 @@ export const drawFrame = ({
   )
     return;
 
+  maskContext.globalCompositeOperation = "source-over";
   maskContext.strokeStyle = "white";
-  maskContext.lineWidth = 2;
+  maskContext.lineWidth = 1;
+
   if (frameHover) {
-    maskContext.fillStyle = 'rgba(255, 255, 255, 0.65)';
+    maskContext.fillStyle = "rgba(255, 255, 255, 0.65)";
     maskContext.fillRect(frame.x, frame.y, frame.width, frame.height);
   }
   maskContext.strokeRect(frame.x, frame.y, frame.width, frame.height);

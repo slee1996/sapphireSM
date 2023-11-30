@@ -35,8 +35,8 @@ export async function POST(req) {
       response_format: "b64_json",
     });
 
-    // fs.unlinkSync(pngImage);
-    // fs.unlinkSync(pngMask);
+    fs.unlinkSync(pngImage);
+    fs.unlinkSync(pngMask);
 
     return NextResponse.json(response);
   } catch (error) {
