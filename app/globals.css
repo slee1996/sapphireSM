@@ -17,3 +17,10 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+.grid-background {
+  background-size: 51px 51px;
+  background-image: 
+    linear-gradient(to right, gray 1px, transparent 1px),
+    linear-gradient(to bottom, gray 1px, transparent 1px);
+}

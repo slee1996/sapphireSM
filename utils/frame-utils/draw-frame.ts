@@ -3,9 +3,11 @@ import { Frame } from "./capture-frame-content";
 export const drawFrame = ({
   frame,
   maskContext,
+  frameHover,
 }: {
   frame: Frame;
   maskContext: any;
+  frameHover: boolean;
 }) => {
   if (
     !frame ||
@@ -16,7 +18,13 @@ export const drawFrame = ({
   )
     return;
 
-  maskContext.strokeStyle = "black";
+  maskContext.globalCompositeOperation = "source-over";
+  maskContext.strokeStyle = "white";
+  maskContext.lineWidth = 1;
+
+  if (frameHover) {
+    maskContext.fillStyle = "rgba(255, 255, 255, 0.65)";
+    maskContext.fillRect(frame.x, frame.y, frame.width, frame.height);
+  }
   maskContext.strokeRect(frame.x, frame.y, frame.width, frame.height);
-  maskContext.fill();
 };

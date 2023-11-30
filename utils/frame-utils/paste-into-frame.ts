@@ -2,9 +2,9 @@ import { Frame } from "./capture-frame-content";
 
 interface PasteIntoFrameProps {
   imageUrl: string;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
+  canvasRef: React.RefObject<HTMLCanvasElement> | HTMLCanvasElement;
   frame: Frame;
-  setCanvasDataUrl: (dataUrl: string) => void; // Assuming setCanvasDataUrl accepts a string
+  setCanvasDataUrl: (dataUrl: string) => void;
 }
 
 export const pasteIntoFrame = ({
@@ -13,27 +13,38 @@ export const pasteIntoFrame = ({
   frame,
   setCanvasDataUrl,
 }: PasteIntoFrameProps) => {
-  const canvas = canvasRef.current;
-  const context = canvas?.getContext("2d");
+  return new Promise<void>((resolve, reject) => {
+    const canvas =
+      canvasRef instanceof HTMLCanvasElement ? canvasRef : canvasRef.current;
+    const context = canvas?.getContext("2d");
 
-  if (!context) return;
-
-  const imageToPaste = new Image();
-  imageToPaste.crossOrigin = "anonymous"; // Set cross-origin attribute
-  imageToPaste.src = imageUrl;
-
-  imageToPaste.onload = () => {
-    context.drawImage(
-      imageToPaste,
-      frame.x,
-      frame.y,
-      frame.width,
-      frame.height
-    );
-
-    if (canvas) {
-      const dataUrl = canvas.toDataURL();
-      setCanvasDataUrl(dataUrl);
+    if (!context) {
+      reject("Canvas context not found");
+      return;
     }
-  };
+
+    const imageToPaste = new Image();
+    imageToPaste.crossOrigin = "anonymous";
+    imageToPaste.src = imageUrl;
+
+    imageToPaste.onload = async () => {
+      context.drawImage(
+        imageToPaste,
+        frame.x,
+        frame.y,
+        frame.width,
+        frame.height
+      );
+
+      if (canvas) {
+        const dataUrl = canvas.toDataURL();
+        await setCanvasDataUrl(dataUrl);
+      }
+      resolve(); // Resolve the promise after drawing the image and setting the data URL
+    };
+
+    imageToPaste.onerror = () => {
+      reject("Error loading image");
+    };
+  });
 };
