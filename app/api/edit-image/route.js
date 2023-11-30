@@ -8,7 +8,7 @@ function base64ToPng(base64, filename = "image.png") {
   const base64Data = base64.split(";base64,").pop();
 
   const tmpDir = "/tmp";
-  const filePath = path.join(__dirname, filename);
+  const filePath = path.join(tmpDir, filename);
 
   fs.writeFileSync(filePath, base64Data, { encoding: "base64" });
 
