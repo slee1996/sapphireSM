@@ -4,14 +4,12 @@ interface PasteIntoFrameProps {
   imageUrl: string;
   canvasRef: React.RefObject<HTMLCanvasElement> | HTMLCanvasElement;
   frame: Frame;
-  setCanvasDataUrl: (dataUrl: string) => void;
 }
 
 export const pasteIntoFrame = ({
   imageUrl,
   canvasRef,
   frame,
-  setCanvasDataUrl,
 }: PasteIntoFrameProps) => {
   return new Promise<void>((resolve, reject) => {
     const canvas =
@@ -38,7 +36,6 @@ export const pasteIntoFrame = ({
 
       if (canvas) {
         const dataUrl = canvas.toDataURL();
-        await setCanvasDataUrl(dataUrl);
       }
       resolve(); // Resolve the promise after drawing the image and setting the data URL
     };
