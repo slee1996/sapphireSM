@@ -12,6 +12,7 @@ import {
   pasteIntoFrame,
 } from "@/utils/frame-utils";
 import { getMousePos } from "@/utils/get-mouse-pos";
+import { checkHover } from "@/utils/check-hover";
 import { sendEdit } from "@/utils/send-edit";
 import { default as ImageComponent } from "next/image";
 import { drawImageNew } from "@/utils/draw-utils/draw-image-new";
@@ -28,7 +29,22 @@ function generateUniqueId(base64String: string) {
   return hash;
 }
 
-export const NewCanvas = ({ testImg }: { testImg: any }) => {
+const blobToBase64 = (blob: any) => {
+  const reader = new FileReader();
+  reader.readAsDataURL(blob);
+  return new Promise((resolve, reject) => {
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+  });
+};
+
+export const NewCanvas = ({
+  testImg,
+  setTestImg,
+}: {
+  testImg: any;
+  setTestImg: any;
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const offscreenCanvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -62,7 +78,7 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
   const [editPrompt, setEditPrompt] = useState("");
   const [imageEdits, setImageEdits] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [canvasDataUrl, setCanvasDataUrl] = useState("");
+  const [canvasDataUrl, setCanvasDataUrl] = useState(null);
   const [scaledFrame, setScaledFrame] = useState({
     positionX: 0,
     positionY: 0,
@@ -180,68 +196,11 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
     isDragging,
     isDraggingImage,
     testImg,
+    canvasDataUrl,
   ]);
 
   const zoomFunc = (zoomFactor: number) => {
     setZoom(zoom * zoomFactor);
-  };
-
-  const checkHover = (e: any) => {
-    if (toggleEraser) return;
-    if (canvasRef.current) {
-      let clientX, clientY;
-
-      if (e.nativeEvent instanceof TouchEvent) {
-        const touch = e.nativeEvent.touches[0];
-        clientX = touch.clientX;
-        clientY = touch.clientY;
-      } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
-      }
-
-      const { x, y } = getMousePos({
-        canvas: canvasRef.current,
-        x: clientX,
-        y: clientY,
-      });
-
-      let hRatio = (canvasRef.current.width / imgDimensions.width / 2) * zoom;
-      let vRatio = (canvasRef.current.height / imgDimensions.height / 2) * zoom;
-      let ratio = Math.min(hRatio, vRatio);
-
-      let scaledWidth = imgDimensions.width * ratio;
-      let scaledHeight = imgDimensions.height * ratio;
-
-      let centerShift_x =
-        (canvasRef.current.width - scaledWidth) / 2 - positionX;
-      let centerShift_y =
-        (canvasRef.current.height - scaledHeight) / 2 - positionY;
-
-      if (
-        x >= frame.x &&
-        x <= frame.x + frame.width &&
-        y >= frame.y &&
-        y <= frame.y + frame.height
-      ) {
-        setFrameHover(true);
-        setImageHover(false);
-        return { imageHover: false, frameHover: true };
-      } else if (
-        x >= centerShift_x &&
-        x <= centerShift_x + scaledWidth &&
-        y >= centerShift_y &&
-        y <= centerShift_y + scaledHeight
-      ) {
-        setFrameHover(false);
-        setImageHover(false);
-        return { imageHover: true, frameHover: false };
-      } else {
-        setFrameHover(false);
-        setImageHover(false);
-        return { imageHover: false, frameHover: false };
-      }
-    }
   };
 
   const captureHandler = async () => {
@@ -267,7 +226,7 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
     });
   };
 
-  const pasteAndDownload = () => {
+  const pasteAndDownload = (download = true) => {
     const canvas = offscreenCanvasRef.current;
     const context = canvas?.getContext("2d");
 
@@ -284,7 +243,10 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
       // Convert canvas to Blob
       downloadCanvas.toBlob((blob: any) => {
         const url = URL.createObjectURL(blob);
-
+        blobToBase64(blob).then((base64) => {
+          setTestImg({ url: base64, prompt: "" });
+        });
+        if (!download) return;
         // Create a temporary link to trigger the download
         const a = document.createElement("a");
         a.href = url;
@@ -299,8 +261,8 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
   };
 
   return (
-    <div className='flex flex-col space-y-4 sm:space-y-0 md:flex-row md:space-x-4 my-2'>
-      <div className='relative'>
+    <div className="flex flex-col space-y-4 sm:space-y-0 md:flex-row md:space-x-4 my-2">
+      <div className="relative">
         <CommandBar
           zoom={zoomFunc}
           setFrame={setFrame}
@@ -312,9 +274,9 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
         />
         <canvas
           ref={offscreenCanvasRef}
-          className='absolute -left-[10000px] top-0'
-          width='1792'
-          height='1024'
+          className="absolute -left-[10000px] top-0"
+          width="1792"
+          height="1024"
         />
         <canvas
           ref={canvasRef}
@@ -330,7 +292,7 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
           }
           `}
           onMouseDown={(e) => {
-            if (imageEdits.length > 0) return;
+            // if (imageEdits.length > 0) return;
             if (toggleEraser) {
               setIsErasing(true);
               const pos = getMousePos({
@@ -357,11 +319,6 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
 
                 let scaledWidth = imgDimensions.width * ratio;
                 let scaledHeight = imgDimensions.height * ratio;
-
-                let centerShift_x =
-                  (context.canvas.width - scaledWidth) / 2 - positionX;
-                let centerShift_y =
-                  (context.canvas.height - scaledHeight) / 2 - positionY;
 
                 let imageLeft = (context.canvas.width - scaledWidth) / 2;
                 let imageTop = (context.canvas.height - scaledHeight) / 2;
@@ -394,7 +351,19 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
               return;
             }
 
-            const hoverStatus = checkHover(e);
+            const hoverStatus = toggleEraser
+              ? { imageHover: false, frameHover: false }
+              : checkHover(
+                  e,
+                  canvasRef,
+                  imgDimensions,
+                  frame,
+                  zoom,
+                  positionX,
+                  positionY
+                );
+            setImageHover(false);
+            setFrameHover(hoverStatus?.frameHover ?? false);
 
             // if (hoverStatus?.imageHover) {
             //   setIsDraggingImage(true);
@@ -417,9 +386,23 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
               });
             }
           }}
-          onMouseEnter={checkHover}
+          onMouseEnter={(e) => {
+            const hoverStatus = toggleEraser
+              ? { imageHover: false, frameHover: false }
+              : checkHover(
+                  e,
+                  canvasRef,
+                  imgDimensions,
+                  frame,
+                  zoom,
+                  positionX,
+                  positionY
+                );
+            setImageHover(false);
+            setFrameHover(hoverStatus?.frameHover ?? false);
+          }}
           onMouseUp={() => {
-            if (imageEdits.length > 0) return;
+            // if (imageEdits.length > 0) return;
             if (isErasing) {
               setIsErasing(false);
               setLastEraserPos({ x: 0, y: 0 });
@@ -442,7 +425,7 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
             setIsDraggingImage(false);
           }}
           onMouseOut={() => {
-            if (imageEdits.length > 0) return;
+            // if (imageEdits.length > 0) return;
             if (isErasing) {
               setIsErasing(false);
               setLastEraserPos({ x: 0, y: 0 });
@@ -464,7 +447,7 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
             setImageHover(false);
           }}
           onMouseMove={(e) => {
-            if (imageEdits.length > 0) return;
+            // if (imageEdits.length > 0) return;
             if (isErasing) {
               const newPos = getMousePos({
                 canvas: canvasRef.current,
@@ -540,7 +523,19 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
               return;
             }
 
-            checkHover(e);
+            const hoverStatus = toggleEraser
+              ? { imageHover: false, frameHover: false }
+              : checkHover(
+                  e,
+                  canvasRef,
+                  imgDimensions,
+                  frame,
+                  zoom,
+                  positionX,
+                  positionY
+                );
+            setImageHover(false);
+            setFrameHover(hoverStatus?.frameHover ?? false);
 
             // if (isDraggingImage) {
             //   const newPos = getMousePos({
@@ -576,7 +571,7 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
             }
           }}
           onTouchStart={(e) => {
-            if (imageEdits.length > 0) return;
+            // if (imageEdits.length > 0) return;
             e.preventDefault();
             const touch = e.touches[0];
 
@@ -604,11 +599,19 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
               return;
             }
 
-            const hoverStatus = checkHover({
-              clientX: touch.clientX,
-              clientY: touch.clientY,
-              nativeEvent: e.nativeEvent,
-            });
+            const hoverStatus = toggleEraser
+              ? { imageHover: false, frameHover: false }
+              : checkHover(
+                  e,
+                  canvasRef,
+                  imgDimensions,
+                  frame,
+                  zoom,
+                  positionX,
+                  positionY
+                );
+            setImageHover(false);
+            setFrameHover(hoverStatus?.frameHover ?? false);
 
             // if (hoverStatus?.imageHover) {
             //   setIsDraggingImage(true);
@@ -631,7 +634,7 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
             }
           }}
           onTouchEnd={(e) => {
-            if (imageEdits.length > 0) return;
+            // if (imageEdits.length > 0) return;
             if (isErasing) {
               setIsErasing(false);
               setLastEraserPos({ x: 0, y: 0 });
@@ -649,7 +652,7 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
             setImageHover(false);
           }}
           onTouchMove={(e) => {
-            if (imageEdits.length > 0) return;
+            // if (imageEdits.length > 0) return;
             const touch = e.touches[0];
 
             if (isErasing) {
@@ -713,18 +716,18 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
               });
             }
           }}
-          width='1792'
-          height='1024'
+          width="1792"
+          height="1024"
         />
 
-        <div className='bg-black rounded-xl md:absolute md:top-0 md:right-0 p-2 m-1 md:w-1/5 md:h-5/6 overflow-y-scroll'>
+        <div className="bg-black rounded-xl md:absolute md:top-0 md:right-0 p-2 m-1 md:w-1/5 md:h-5/6 overflow-y-scroll">
           Image Edits
           {loading ? "Loading..." : null}
           {imageEdits.length > 0
             ? imageEdits.map((i: any, k: any) => (
                 <div key={k}>
                   <button
-                    className='cursor-pointer'
+                    className="cursor-pointer"
                     onClick={async () => {
                       await pasteIntoFrame({
                         imageUrl: i,
@@ -735,7 +738,6 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
                           width: scaledFrame.frameWidth,
                           height: scaledFrame.frameHeight,
                         },
-                        setCanvasDataUrl,
                       });
                       pasteAndDownload();
                     }}
@@ -743,15 +745,32 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
                     Click to paste edit and download (hover over image below to
                     preview)
                   </button>
-
+                  <button
+                    className="cursor-pointer"
+                    onClick={async () => {
+                      await pasteIntoFrame({
+                        imageUrl: i,
+                        canvasRef: offscreenCanvasRef,
+                        frame: {
+                          x: scaledFrame.positionX,
+                          y: scaledFrame.positionY,
+                          width: scaledFrame.frameWidth,
+                          height: scaledFrame.frameHeight,
+                        },
+                      });
+                      pasteAndDownload(false);
+                    }}
+                  >
+                    Click to paste edit and continue editing
+                  </button>
                   <ImageComponent
-                    className='hover:border-yellow-400 hover:border-2'
+                    className="hover:border-yellow-400 hover:border-2"
                     src={i}
                     width={1792}
                     height={1024}
-                    alt=''
+                    alt=""
                     onMouseEnter={() => {
-                      const uniqueId = generateUniqueId(i); // Replace with your ID or hash generation
+                      const uniqueId = generateUniqueId(i); 
                       if (!base64Cache.has(uniqueId)) {
                         base64Cache.set(uniqueId, i);
                       }
@@ -759,7 +778,6 @@ export const NewCanvas = ({ testImg }: { testImg: any }) => {
                         imageUrl: base64Cache.get(uniqueId),
                         canvasRef,
                         frame,
-                        setCanvasDataUrl,
                       });
                     }}
                     onMouseOut={() => {
