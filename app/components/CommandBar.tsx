@@ -6,6 +6,7 @@ export const CommandBar = ({
   editPrompt,
   setEditPrompt,
   captureHandler,
+  downloadCurrentImage,
 }: {
   zoom: (zoomFactor: number) => void;
   setFrame: any;
@@ -14,21 +15,22 @@ export const CommandBar = ({
   editPrompt: string;
   setEditPrompt: (value: any) => void;
   captureHandler: any;
+  downloadCurrentImage: () => void;
 }) => {
   return (
-    <div className='md:absolute md:top-0 md:left-0 p-0 md:p-1 md:m-0 m-2 space-x-1 flex items-center'>
+    <div className="md:absolute md:top-0 md:left-0 p-0 md:p-1 md:m-0 m-2 space-x-1 flex items-center">
       <div>
         Image size
-        <div className='flex flex-row justify-between mx-3'>
+        <div className="flex flex-row justify-between mx-3">
           <button
             onClick={() => zoom(0.9)}
-            className='p-0 h-6 w-6 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-xl font-semibold flex items-center justify-center'
+            className="p-0 h-6 w-6 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-xl font-semibold flex items-center justify-center"
           >
             -
           </button>
           <button
             onClick={() => zoom(1.1)}
-            className='p-0 h-6 w-6 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-xl font-semibold flex items-center justify-center'
+            className="p-0 h-6 w-6 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-xl font-semibold flex items-center justify-center"
           >
             +
           </button>
@@ -36,7 +38,7 @@ export const CommandBar = ({
       </div>
       <div>
         Frame size
-        <div className='flex flex-row justify-between mx-3'>
+        <div className="flex flex-row justify-between mx-3">
           <button
             onClick={() =>
               setFrame((currentVal: any) => {
@@ -53,7 +55,7 @@ export const CommandBar = ({
                 };
               })
             }
-            className='p-0 h-6 w-6 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-xl font-semibold flex items-center justify-center'
+            className="p-0 h-6 w-6 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-xl font-semibold flex items-center justify-center"
           >
             -
           </button>
@@ -73,7 +75,7 @@ export const CommandBar = ({
                 };
               })
             }
-            className='p-0 h-6 w-6 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-xl font-semibold flex items-center justify-center'
+            className="p-0 h-6 w-6 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-xl font-semibold flex items-center justify-center"
           >
             +
           </button>
@@ -81,21 +83,21 @@ export const CommandBar = ({
       </div>
       <div>
         Eraser
-        <div className='flex items-center space-x-2'>
-          <div className='relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in'>
+        <div className="flex items-center space-x-2">
+          <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
             <input
-              type='checkbox'
-              name='toggle'
-              id='toggle'
+              type="checkbox"
+              name="toggle"
+              id="toggle"
               checked={isDrawing}
               onChange={() => {
                 setIsDrawing(!isDrawing);
               }}
-              className='toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer peer checked:left-4 hover:w-7 hover:h-7 hover:translate-y-[-5%]'
+              className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer peer checked:left-4 hover:w-7 hover:h-7 hover:translate-y-[-5%]"
             />
             <label
-              htmlFor='toggle'
-              className='toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer peer-checked:bg-blue-500'
+              htmlFor="toggle"
+              className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer peer-checked:bg-blue-500"
             ></label>
           </div>
         </div>
@@ -103,16 +105,24 @@ export const CommandBar = ({
       <div>
         <label>Edit Prompt: </label>
         <input
-          className='text-black w-full'
-          placeholder='Describe your desired change here'
+          className="text-black w-full"
+          placeholder="Describe your desired change here"
           value={editPrompt}
           onChange={(e) => setEditPrompt(e.target.value)}
         />
         <button
-          className='rounded-full bg-blue-500 hover:bg-blue-600 p-1 text-black my-1'
+          className="rounded-full bg-blue-500 hover:bg-blue-600 p-1 text-black my-1"
           onClick={() => captureHandler()}
         >
           Send Edit
+        </button>
+      </div>
+      <div>
+        <button
+          className="rounded-full bg-blue-500 hover:bg-blue-600 p-1 text-black my-1"
+          onClick={downloadCurrentImage}
+        >
+          Download Current Image
         </button>
       </div>
     </div>

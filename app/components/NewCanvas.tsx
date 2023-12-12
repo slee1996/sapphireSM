@@ -260,6 +260,24 @@ export const NewCanvas = ({
     }
   };
 
+  const downloadCurrentImage = () => {
+    const offscreenCanvas = offscreenCanvasRef.current;
+    if (offscreenCanvas) {
+      // Get the data URL of the canvas content
+      const imageUrl = offscreenCanvas.toDataURL("image/png");
+  
+      // Create a temporary link element
+      const downloadLink = document.createElement("a");
+      downloadLink.href = imageUrl;
+      downloadLink.download = "canvas-image.png"; // Name the downloaded file
+  
+      // Append the link to the DOM and trigger the download, then remove the link
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
+  };
+
   return (
     <div className="flex flex-col space-y-4 sm:space-y-0 md:flex-row md:space-x-4 my-2">
       <div className="relative">
@@ -271,6 +289,7 @@ export const NewCanvas = ({
           editPrompt={editPrompt}
           setEditPrompt={setEditPrompt}
           captureHandler={captureHandler}
+          downloadCurrentImage={downloadCurrentImage}
         />
         <canvas
           ref={offscreenCanvasRef}
