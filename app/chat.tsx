@@ -1,9 +1,14 @@
 "use client";
 import { useChat } from "ai/react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NewCanvas } from "./components/NewCanvas";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import EditHistory from "./components/EditHistory";
+import { db } from "@/indexed-db/db";
+import { base64ToBlob } from "@/utils/base64-to-blob";
+import { createThumbnailBlob } from "@/utils/base64-to-compressed-blob";
+import { useRouter } from "next/navigation";
 
 const sizeOptions = ["1024x1024", "1792x1024", "1024x1792"];
 const styleOptions = ["vivid", "natural"];
@@ -16,12 +21,11 @@ const defaultState = {
 
 export default function Chat() {
   const [state, setState] = useState(defaultState);
-  const [editImage, setEditImage] = useState(false);
   const [imageToEdit, setImageToEdit] = useState({
     url: "",
     prompt: "",
   });
-
+  const router = useRouter();
   const { input, handleInputChange, handleSubmit, isLoading, messages } =
     useChat({
       body: state,
@@ -44,6 +48,10 @@ export default function Chat() {
   const handleStyleChange = (e: any) => {
     setState({ ...state, style: e.target.value });
   };
+
+  useEffect(() => {
+    db.imageHistory.clear();
+  }, []);
 
   return (
     <div className="flex flex-col w-full">
@@ -181,12 +189,33 @@ export default function Chat() {
                         Download Image
                       </a>
                       <button
-                        onClick={() => {
-                          setEditImage((currentVal) => !currentVal);
+                        onClick={async () => {
+                          const blobbifiedImage = base64ToBlob(
+                            content.data[0].b64_json,
+                            "image/png"
+                          );
+                          const thumbnailBlob = await createThumbnailBlob({
+                            base64Data: content.data[0].b64_json,
+                            thumbnailWidth: 200,
+                            thumbnailHeight: 100,
+                          });
                           setImageToEdit({
                             url: `data:image/jpeg;base64,${content.data[0].b64_json}`,
                             prompt: content.data[0].revised_prompt,
                           });
+
+                          db.imageHistory
+                            .add({
+                              original: blobbifiedImage,
+                              current: blobbifiedImage,
+                              currentThumbnail: thumbnailBlob as Blob,
+                              history: [],
+                            })
+                            .then((primaryKey: any) => {
+                              router.replace("?imageKey=" + primaryKey, {
+                                scroll: false,
+                              });
+                            });
                         }}
                         className="rounded-full bg-white m-1 text-black hover:bg-black hover:text-white px-2"
                       >
@@ -213,6 +242,7 @@ export default function Chat() {
       <div>
         <NewCanvas testImg={imageToEdit.url} setTestImg={setImageToEdit} />
       </div>
+      <EditHistory />
     </div>
   );
 }

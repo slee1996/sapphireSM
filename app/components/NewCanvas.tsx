@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useEffect, useState } from "react";
-import { drawImageScaled, drawImageNonScaled } from "@/utils/draw-utils";
+import { drawImageNonScaled } from "@/utils/draw-utils";
 import { CommandBar } from "./CommandBar";
 import {
   captureFrameContent,
@@ -16,6 +16,9 @@ import { checkHover } from "@/utils/check-hover";
 import { sendEdit } from "@/utils/send-edit";
 import { default as ImageComponent } from "next/image";
 import { drawImageNew } from "@/utils/draw-utils/draw-image-new";
+import { db } from "@/indexed-db/db";
+import { pushNewHistory } from "@/indexed-db/utils/push-new-history";
+import { useSearchParams } from "next/navigation";
 
 function generateUniqueId(base64String: string) {
   let hash = 5381;
@@ -86,6 +89,8 @@ export const NewCanvas = ({
     frameHeight: 0,
   });
   const base64Cache = new Map();
+  const searchParams = useSearchParams();
+  const imageKey = searchParams.get("imageKey");
 
   useEffect(() => {
     setImageEdits([]);
@@ -97,33 +102,42 @@ export const NewCanvas = ({
     const context = canvas?.getContext("2d");
     const offscreenContext = offscreenCanvas?.getContext("2d");
 
+    const loadImageAndDraw = (imageSrc: any) => {
+      if (!imageRef.current) {
+        imageRef.current = new Image();
+      }
+
+      imageRef.current.onload = () => {
+        setImgDimensions({
+          width: imageRef.current?.width || 1792,
+          height: imageRef.current?.height || 1024,
+        });
+        draw();
+      };
+      imageRef.current.src = imageSrc;
+    };
+
     const draw = () => {
       if (context && offscreenContext && imageRef.current) {
-        let hRatio = (context.canvas.width / imageRef.current.width / 2) * zoom;
-        let vRatio =
-          (context.canvas.height / imageRef.current.height / 2) * zoom;
-        let ratio = Math.min(hRatio, vRatio);
-        let inverseRatio = 1 / ratio;
+        const ratio = Math.min(
+          (context.canvas.width / imageRef.current.width / 2) * zoom,
+          (context.canvas.height / imageRef.current.height / 2) * zoom
+        );
+        const inverseRatio = 1 / ratio;
 
-        let scaledWidth = imageRef.current.width * ratio;
-        let scaledHeight = imageRef.current.height * ratio;
-        let centerShift_x =
-          (context.canvas.width - scaledWidth) / 2 - positionX;
-        let centerShift_y =
-          (context.canvas.height - scaledHeight) / 2 - positionY;
-
-        let imageLeft = (context.canvas.width - scaledWidth) / 2 - positionX;
-        let imageTop = (context.canvas.height - scaledHeight) / 2 - positionY;
+        const scaledWidth = imageRef.current.width * ratio;
+        const scaledHeight = imageRef.current.height * ratio;
+        const centerShift = {
+          x: (context.canvas.width - scaledWidth) / 2 - positionX,
+          y: (context.canvas.height - scaledHeight) / 2 - positionY,
+        };
 
         drawImageNew({
           img: imageRef.current,
           ctx: context,
           width: scaledWidth,
           height: scaledHeight,
-          position: {
-            x: centerShift_x,
-            y: centerShift_y,
-          },
+          position: centerShift,
         });
 
         drawFrame({ frame, maskContext: context, frameHover });
@@ -136,16 +150,18 @@ export const NewCanvas = ({
             positionY,
             imageHover,
           });
+
           const scaled = drawFrameScaled({
             frame,
             maskContext: offscreenContext,
             frameHover,
             img: imageRef.current,
             zoom,
-            positionX: (frame.x - imageLeft) * inverseRatio,
-            positionY: (frame.y - imageTop) * inverseRatio,
+            positionX: (frame.x - centerShift.x) * inverseRatio,
+            positionY: (frame.y - centerShift.y) * inverseRatio,
             onscreenCanvas: context,
           });
+
           if (scaled) {
             setScaledFrame(scaled);
           }
@@ -153,26 +169,8 @@ export const NewCanvas = ({
       }
     };
 
-    if (!imageRef.current) {
-      imageRef.current = new Image();
-      imageRef.current.onload = () => {
-        setImgDimensions({
-          width: imageRef.current?.width || 1792,
-          height: imageRef.current?.height || 1024,
-        });
-        draw();
-      };
-      imageRef.current.src = testImg;
-      return;
-    } else if (imageRef.current.src !== testImg) {
-      imageRef.current.onload = () => {
-        setImgDimensions({
-          width: imageRef.current?.width || 1792,
-          height: imageRef.current?.height || 1024,
-        });
-        draw();
-      };
-      imageRef.current.src = testImg;
+    if (!imageRef.current || imageRef.current.src !== testImg) {
+      loadImageAndDraw(testImg);
     } else if (context && imageRef.current.complete) {
       setImgDimensions({
         width: imageRef.current.width,
@@ -208,10 +206,7 @@ export const NewCanvas = ({
 
     const imagesToSend = await captureFrameContent({
       canvasRef: offscreenCanvasRef,
-      maskCanvasRef: canvasRef,
-      frame,
       img: imageRef.current,
-      zoom,
       positionX: scaledFrame.positionX,
       positionY: scaledFrame.positionY,
       scaledFrame,
@@ -243,6 +238,12 @@ export const NewCanvas = ({
       // Convert canvas to Blob
       downloadCanvas.toBlob((blob: any) => {
         const url = URL.createObjectURL(blob);
+        // db.imageHistory.add({
+        //   original: blob,
+        //   current: blob,
+        //   history: [blob],
+        // });
+        pushNewHistory(imageKey, blob);
         blobToBase64(blob).then((base64) => {
           setTestImg({ url: base64, prompt: "" });
         });
@@ -265,12 +266,12 @@ export const NewCanvas = ({
     if (offscreenCanvas) {
       // Get the data URL of the canvas content
       const imageUrl = offscreenCanvas.toDataURL("image/png");
-  
+
       // Create a temporary link element
       const downloadLink = document.createElement("a");
       downloadLink.href = imageUrl;
       downloadLink.download = "canvas-image.png"; // Name the downloaded file
-  
+
       // Append the link to the DOM and trigger the download, then remove the link
       document.body.appendChild(downloadLink);
       downloadLink.click();
@@ -326,9 +327,6 @@ export const NewCanvas = ({
                 offscreenCanvasRef.current?.getContext("2d");
 
               if (context && offscreenContext && imageRef.current) {
-                let imageWidthRatio =
-                  context.canvas.width / (imageRef.current.width / 2);
-
                 let hRatio =
                   (context.canvas.width / imageRef.current.width / 2) * zoom;
                 let vRatio =
@@ -789,7 +787,7 @@ export const NewCanvas = ({
                     height={1024}
                     alt=""
                     onMouseEnter={() => {
-                      const uniqueId = generateUniqueId(i); 
+                      const uniqueId = generateUniqueId(i);
                       if (!base64Cache.has(uniqueId)) {
                         base64Cache.set(uniqueId, i);
                       }

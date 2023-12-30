@@ -7,10 +7,7 @@ export interface Frame {
 
 interface CaptureFrameContentProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
-  maskCanvasRef: React.RefObject<HTMLCanvasElement>;
-  frame: Frame;
   img: any;
-  zoom: any;
   positionX: any;
   positionY: any;
   scaledFrame: any;
@@ -18,15 +15,11 @@ interface CaptureFrameContentProps {
 
 export const captureFrameContent = ({
   canvasRef,
-  maskCanvasRef,
-  frame,
   img,
-  zoom,
   positionX,
   positionY,
   scaledFrame,
 }: CaptureFrameContentProps) => {
-  const onscreenContext = maskCanvasRef.current?.getContext("2d"); // onscreen canvas
   const offscreenContext = canvasRef.current?.getContext("2d"); // offscreen canvas
   const imgCanvas = document.createElement("canvas");
   const imgContext = imgCanvas.getContext("2d");
@@ -47,14 +40,9 @@ export const captureFrameContent = ({
     );
   }
 
-  if (!onscreenContext || !offscreenContext) {
+  if (!offscreenContext) {
     return;
   }
-
-  const hRatio = (onscreenContext.canvas.width / img.width / 2) * zoom;
-  const vRatio = (onscreenContext.canvas.height / img.height / 2) * zoom;
-  const ratio = Math.min(hRatio, vRatio);
-  const inverseRatio = 1 / ratio;
 
   const mainFrameData = imgContext?.getImageData(
     positionX,

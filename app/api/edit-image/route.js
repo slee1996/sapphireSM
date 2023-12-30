@@ -24,19 +24,18 @@ export async function POST(req) {
     const data = await req.json();
     const { image, mask, prompt } = data;
 
-    const pngImage = base64ToPng(image, "image.png");
-    const pngMask = base64ToPng(mask, "mask.png");
+    const [pngImage, pngMask] = await Promise.all([
+      base64ToPng(image, "image.png"),
+      base64ToPng(mask, "mask.png"),
+    ]);
 
     const response = await openai.images.edit({
       image: fs.createReadStream(pngImage),
       mask: fs.createReadStream(pngMask),
-      prompt,
+      prompt: prompt || "_",
       n: 3,
       response_format: "b64_json",
     });
-
-    fs.unlinkSync(pngImage);
-    fs.unlinkSync(pngMask);
 
     return NextResponse.json(response);
   } catch (error) {
