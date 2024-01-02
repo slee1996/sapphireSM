@@ -29,6 +29,29 @@ export default function Chat() {
   const { input, handleInputChange, handleSubmit, isLoading, messages } =
     useChat({
       body: state,
+      onFinish: async (message) => {
+        let newKey;
+        const content = JSON.parse(message.content);
+        const { b64_json } = content.data[0];
+        const blobbifiedImage = base64ToBlob(b64_json, "image/png");
+        const thumbnailBlob = await createThumbnailBlob({
+          base64Data: b64_json,
+          thumbnailWidth: 200,
+          thumbnailHeight: 100,
+        });
+
+        db.imageHistory
+          .add({
+            id: message.id,
+            original: blobbifiedImage,
+            current: blobbifiedImage,
+            currentThumbnail: thumbnailBlob as Blob,
+            history: [],
+          })
+          .then((primaryKey: any) => {
+            newKey = primaryKey;
+          });
+      },
     });
 
   const onFormSubmit = (e: any) => {
@@ -189,33 +212,14 @@ export default function Chat() {
                         Download Image
                       </a>
                       <button
-                        onClick={async () => {
-                          const blobbifiedImage = base64ToBlob(
-                            content.data[0].b64_json,
-                            "image/png"
-                          );
-                          const thumbnailBlob = await createThumbnailBlob({
-                            base64Data: content.data[0].b64_json,
-                            thumbnailWidth: 200,
-                            thumbnailHeight: 100,
-                          });
+                        onClick={() => {
                           setImageToEdit({
                             url: `data:image/jpeg;base64,${content.data[0].b64_json}`,
                             prompt: content.data[0].revised_prompt,
                           });
-
-                          db.imageHistory
-                            .add({
-                              original: blobbifiedImage,
-                              current: blobbifiedImage,
-                              currentThumbnail: thumbnailBlob as Blob,
-                              history: [],
-                            })
-                            .then((primaryKey: any) => {
-                              router.replace("?imageKey=" + primaryKey, {
-                                scroll: false,
-                              });
-                            });
+                          router.replace("?imageKey=" + msg.id, {
+                            scroll: false,
+                          });
                         }}
                         className="rounded-full bg-white m-1 text-black hover:bg-black hover:text-white px-2"
                       >

@@ -1,7 +1,7 @@
 import Dexie, { Table } from "dexie";
 
 export interface ImageHistory {
-  id?: number;
+  id: string;
   original: Blob;
   current: Blob;
   currentThumbnail: Blob;
@@ -14,7 +14,7 @@ export class ImageHistoryDexie extends Dexie {
   constructor() {
     super("imageHistoryDb");
     this.version(1).stores({
-      imageHistory: "++id, original, current, history",
+      imageHistory: "id, original, current, history",
     });
   }
 }

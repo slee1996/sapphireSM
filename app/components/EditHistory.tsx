@@ -3,6 +3,11 @@ import React, { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/indexed-db/db";
 import { useSearchParams } from "next/navigation";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 const blobToBase64 = (blob: Blob) => {
   const reader = new FileReader();
@@ -16,7 +21,7 @@ const blobToBase64 = (blob: Blob) => {
 export default function EditHistory() {
   const history = useLiveQuery(() => db.imageHistory.toArray());
   const [base64Images, setBase64Images] = useState({}); // thumbnails
-  const [base64HistoryImages, setBase64HistoryImages] = useState([]);
+  const [base64HistoryImages, setBase64HistoryImages] = useState<any[]>([]);
   const searchParams = useSearchParams();
   const imageKey = searchParams.get("imageKey");
 
@@ -35,9 +40,7 @@ export default function EditHistory() {
     };
 
     const loadCurrentImageHistory = async () => {
-      const currentImage = history?.find(
-        (image) => image.id === Number(imageKey)
-      );
+      const currentImage = history?.find((image) => image.id === imageKey);
       const historyBase64 = [];
       for (const image of currentImage?.history || []) {
         const base64 = await blobToBase64(image);
@@ -53,24 +56,38 @@ export default function EditHistory() {
 
   return (
     <div>
-      <h2>Edit History</h2>
+      <h2>Image History</h2>
       {history?.map((image, i) => (
-        <div key={i}>
-          <span>Original Image</span>
-          <img src={base64Images[image.id]} alt="" />
-          {imageKey && Number(imageKey) === image.id && (
+        <div key={i} className="flex flex-row">
+          <div>
+            <span>Original Image</span>
+            {/* @ts-ignore */}
+            <img src={base64Images[image.id]} alt="" />
+          </div>
+          {imageKey && imageKey === image.id && (
             <div>
-              <h3>Image History</h3>
-              {base64HistoryImages.map((img, idx) => (
-                <div key={idx}>
-                  {idx}
-                  <img
-                    src={img}
-                    alt={`History ${idx + 1}`}
-                    className="h-20 w-32"
-                  />
-                </div>
-              ))}
+              <h3>Edit History</h3>
+              <div className="flex flex-row w-full">
+                {base64HistoryImages.map((img, idx) => (
+                  <div key={idx}>
+                    <HoverCard>
+                      <HoverCardTrigger>
+                        <img
+                          src={img}
+                          alt={`History ${idx + 1}`}
+                          className="h-20 w-32"
+                        />
+                      </HoverCardTrigger>
+                      <HoverCardContent>
+                        <img src={img} alt={`History ${idx + 1}`} />
+                        <button className="border p-1 rounded-full">
+                          click to restore to this state
+                        </button>
+                      </HoverCardContent>
+                    </HoverCard>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

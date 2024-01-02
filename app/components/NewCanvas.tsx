@@ -16,7 +16,6 @@ import { checkHover } from "@/utils/check-hover";
 import { sendEdit } from "@/utils/send-edit";
 import { default as ImageComponent } from "next/image";
 import { drawImageNew } from "@/utils/draw-utils/draw-image-new";
-import { db } from "@/indexed-db/db";
 import { pushNewHistory } from "@/indexed-db/utils/push-new-history";
 import { useSearchParams } from "next/navigation";
 
@@ -238,11 +237,6 @@ export const NewCanvas = ({
       // Convert canvas to Blob
       downloadCanvas.toBlob((blob: any) => {
         const url = URL.createObjectURL(blob);
-        // db.imageHistory.add({
-        //   original: blob,
-        //   current: blob,
-        //   history: [blob],
-        // });
         pushNewHistory(imageKey, blob);
         blobToBase64(blob).then((base64) => {
           setTestImg({ url: base64, prompt: "" });
