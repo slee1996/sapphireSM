@@ -59,7 +59,7 @@ export default function EditHistory({
   }, [history, imageKey]);
 
   return (
-    <div>
+    <div className="w-full bg-black text-white rounded-lg shadow-xl my-4 p-4">
       <h2>Image History</h2>
       {history?.map((image, i) => (
         <div key={i} className="flex flex-row">

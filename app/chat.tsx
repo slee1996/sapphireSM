@@ -253,10 +253,10 @@ export default function Chat() {
           </ScrollArea>
         </div>
       </div>
+      <EditHistory setImageToEdit={setImageToEditFunc} />
       <div>
         <NewCanvas testImg={imageToEdit.url} setTestImg={setImageToEdit} />
       </div>
-      <EditHistory setImageToEdit={setImageToEditFunc} />
     </div>
   );
 }
