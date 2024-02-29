@@ -18,7 +18,11 @@ const blobToBase64 = (blob: Blob) => {
   });
 };
 
-export default function EditHistory() {
+export default function EditHistory({
+  setImageToEdit,
+}: {
+  setImageToEdit: any;
+}) {
   const history = useLiveQuery(() => db.imageHistory.toArray());
   const [base64Images, setBase64Images] = useState({}); // thumbnails
   const [base64HistoryImages, setBase64HistoryImages] = useState<any[]>([]);
@@ -68,19 +72,24 @@ export default function EditHistory() {
             <div>
               <h3>Edit History</h3>
               <div className="flex flex-row w-full">
-                {base64HistoryImages.map((img, idx) => (
+                {base64HistoryImages.map((imgChild, idx) => (
                   <div key={idx}>
                     <HoverCard>
                       <HoverCardTrigger>
                         <img
-                          src={img}
+                          src={imgChild}
                           alt={`History ${idx + 1}`}
                           className="h-20 w-32"
                         />
                       </HoverCardTrigger>
                       <HoverCardContent>
-                        <img src={img} alt={`History ${idx + 1}`} />
-                        <button className="border p-1 rounded-full">
+                        <img src={imgChild} alt={`History ${idx + 1}`} />
+                        <button
+                          className="border p-1 rounded-full"
+                          onClick={() => {
+                            setImageToEdit(imgChild, image.id);
+                          }}
+                        >
                           click to restore to this state
                         </button>
                       </HoverCardContent>

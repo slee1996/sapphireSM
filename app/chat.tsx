@@ -76,6 +76,16 @@ export default function Chat() {
     db.imageHistory.clear();
   }, []);
 
+  function setImageToEditFunc(newUrl: any, imgId: any) {
+    setImageToEdit({
+      url: newUrl,
+      prompt: "",
+    });
+    router.replace("?imageKey=" + imgId, {
+      scroll: false,
+    });
+  }
+
   return (
     <div className="flex flex-col w-full">
       <div className="flex flex-row space-x-2 h-1/2">
@@ -246,7 +256,7 @@ export default function Chat() {
       <div>
         <NewCanvas testImg={imageToEdit.url} setTestImg={setImageToEdit} />
       </div>
-      <EditHistory />
+      <EditHistory setImageToEdit={setImageToEditFunc} />
     </div>
   );
 }
